@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/opt/ros/kinetic/include"
+            ]
+        }
+    ],
+    "version": 4
+}

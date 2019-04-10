@@ -9,6 +9,7 @@ MavSensors::MavSensors(string name, string cam_name_1, MavState *state) : name_(
     sync->registerCallback(boost::bind(&MavSensors::SyncStereoCallback, this, _1, _2));
     //nh_.subscribe(name_ + "/mavros/state", 1, &MavState::MavStateCallback, this);
     /*vo2computer_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/svo/pose_imu", 1, &MavSensors::SvoPoseCallback, this);
+
     computer2mav_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/mavros/vision_pose/pose", 10);
 
     left_sub = new message_filters::Subscriber<sensor_msgs::Image>(nh_, cam_name_1 + "/stereo/left/image_raw", 1);
@@ -17,7 +18,9 @@ MavSensors::MavSensors(string name, string cam_name_1, MavState *state) : name_(
     sync = new message_filters::Synchronizer<sync_pol> (sync_pol(10), *left_sub, *right_sub);
     sync->registerCallback(boost::bind(&MavSensors::SyncStereoCallback, this, _1, _2));
     send_vision_estimate_ = true;
+
     tfListener_ = new tf2_ros::TransformListener(tfBuffer_);*/
+
 }
 
 MavSensors::~MavSensors()

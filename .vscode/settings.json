@@ -1,0 +1,9 @@
+{
+    "C_Cpp.errorSquiggles": "Disabled",
+    "files.associations": {
+        "mutex": "cpp",
+        "new": "cpp",
+        "stdexcept": "cpp",
+        "iostream": "cpp"
+    }
+}

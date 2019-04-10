@@ -76,7 +76,10 @@ private:
   Eigen::Vector3d target_pos_, target_vel_;
   double target_yaw = 0;
   Eigen::Vector3d mav_pos, mav_vel, mav_euler;
+<<<<<<< HEAD
   Eigen::Vector3d bias;
+=======
+>>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
   matrix::Quatf mav_q;
   double mav_yaw;
 

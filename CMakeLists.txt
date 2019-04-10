@@ -14,7 +14,10 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   tf2 
   tf2_ros
+<<<<<<< HEAD
   message_generation
+=======
+>>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 )
 find_package(OpenCV REQUIRED COMPONENTS)
 ## System dependencies are found with CMake's conventions
@@ -56,6 +59,7 @@ find_package(OpenCV REQUIRED COMPONENTS)
 #   Message1.msg
 #   Message2.msg
 # )
+<<<<<<< HEAD
 add_message_files(
     FILES
 #   Message1.msg
@@ -68,6 +72,9 @@ add_message_files(
    DEPENDENCIES
    std_msgs
  )
+=======
+
+>>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -122,8 +129,11 @@ catkin_package(
 #  LIBRARIES px4_csq
 #  CATKIN_DEPENDS mavros roscpp std_msgs
 #  DEPENDS system_lib
+<<<<<<< HEAD
   CATKIN_DEPENDS 
   message_runtime
+=======
+>>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 )
 
 ###########
