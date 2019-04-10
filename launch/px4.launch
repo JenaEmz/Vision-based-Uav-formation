@@ -1,0 +1,10 @@
+<launch>
+
+  <node pkg="px4_csq" type="px4_csq_node" name="px4_csq" output="screen">
+  <param name="name" value="0"/>
+  </node>
+  <node pkg="px4_csq" type="px4_csq_node" name="px4_csq1" output="screen">
+  <param name="name" value="1"/>
+  </node>
+<arg name="frame" default="/world"/>
+</launch>
