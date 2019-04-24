@@ -25,6 +25,7 @@ struct colocal_request_
 
   colocal_request_()
     : id(0)
+    , has_inited(false)
     , x(0.0)
     , y(0.0)
     , z(0.0)
@@ -32,6 +33,7 @@ struct colocal_request_
     }
   colocal_request_(const ContainerAllocator& _alloc)
     : id(0)
+    , has_inited(false)
     , x(0.0)
     , y(0.0)
     , z(0.0)
@@ -43,6 +45,9 @@ struct colocal_request_
 
    typedef int16_t _id_type;
   _id_type id;
+
+   typedef uint8_t _has_inited_type;
+  _has_inited_type has_inited;
 
    typedef double _x_type;
   _x_type x;
@@ -134,12 +139,12 @@ struct MD5Sum< ::px4_csq::colocal_request_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "37fd79e3d18a64bd328afe493778e7e9";
+    return "7590e61f48f016787f78f5bc054e2582";
   }
 
   static const char* value(const ::px4_csq::colocal_request_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x37fd79e3d18a64bdULL;
-  static const uint64_t static_value2 = 0x328afe493778e7e9ULL;
+  static const uint64_t static_value1 = 0x7590e61f48f01678ULL;
+  static const uint64_t static_value2 = 0x7f78f5bc054e2582ULL;
 };
 
 template<class ContainerAllocator>
@@ -159,6 +164,7 @@ struct Definition< ::px4_csq::colocal_request_<ContainerAllocator> >
   static const char* value()
   {
     return "int16 id\n\
+bool has_inited\n\
 float64 x\n\
 float64 y\n\
 float64 z\n\
@@ -182,6 +188,7 @@ namespace serialization
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
       stream.next(m.id);
+      stream.next(m.has_inited);
       stream.next(m.x);
       stream.next(m.y);
       stream.next(m.z);
@@ -206,6 +213,8 @@ struct Printer< ::px4_csq::colocal_request_<ContainerAllocator> >
   {
     s << indent << "id: ";
     Printer<int16_t>::stream(s, indent + "  ", v.id);
+    s << indent << "has_inited: ";
+    Printer<uint8_t>::stream(s, indent + "  ", v.has_inited);
     s << indent << "x: ";
     Printer<double>::stream(s, indent + "  ", v.x);
     s << indent << "y: ";

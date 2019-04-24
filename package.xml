@@ -58,12 +58,8 @@
   <exec_depend>mavros</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-<<<<<<< HEAD
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
-=======
-
->>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

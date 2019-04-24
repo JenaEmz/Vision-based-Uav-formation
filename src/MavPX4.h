@@ -16,7 +16,7 @@ class MavPX4
     
 public:
 MavPX4();
-    MavPX4(const string& name);
+    MavPX4(const string& id,const string& config_path);
     ~MavPX4();
 
 private:

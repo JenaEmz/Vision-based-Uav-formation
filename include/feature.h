@@ -26,13 +26,25 @@ struct feature_
 
   feature_()
     : header()
-    , tframe(0.0)
+    , x(0.0)
+    , y(0.0)
+    , z(0.0)
+    , qw(0.0)
+    , qx(0.0)
+    , qy(0.0)
+    , qz(0.0)
     , nrobotid(0)
     , data()  {
     }
   feature_(const ContainerAllocator& _alloc)
     : header(_alloc)
-    , tframe(0.0)
+    , x(0.0)
+    , y(0.0)
+    , z(0.0)
+    , qw(0.0)
+    , qx(0.0)
+    , qy(0.0)
+    , qz(0.0)
     , nrobotid(0)
     , data(_alloc)  {
   (void)_alloc;
@@ -43,8 +55,26 @@ struct feature_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef double _tframe_type;
-  _tframe_type tframe;
+   typedef float _x_type;
+  _x_type x;
+
+   typedef float _y_type;
+  _y_type y;
+
+   typedef float _z_type;
+  _z_type z;
+
+   typedef float _qw_type;
+  _qw_type qw;
+
+   typedef float _qx_type;
+  _qx_type qx;
+
+   typedef float _qy_type;
+  _qy_type qy;
+
+   typedef float _qz_type;
+  _qz_type qz;
 
    typedef int16_t _nrobotid_type;
   _nrobotid_type nrobotid;
@@ -130,12 +160,12 @@ struct MD5Sum< ::orb_formation::feature_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "1f479cc2f4feb5562e889083a5793916";
+    return "5ce271a61328054dc61acf9e59a61d90";
   }
 
   static const char* value(const ::orb_formation::feature_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x1f479cc2f4feb556ULL;
-  static const uint64_t static_value2 = 0x2e889083a5793916ULL;
+  static const uint64_t static_value1 = 0x5ce271a61328054dULL;
+  static const uint64_t static_value2 = 0xc61acf9e59a61d90ULL;
 };
 
 template<class ContainerAllocator>
@@ -155,7 +185,13 @@ struct Definition< ::orb_formation::feature_<ContainerAllocator> >
   static const char* value()
   {
     return "Header header\n\
-float64 tframe\n\
+float32 x\n\
+float32 y\n\
+float32 z\n\
+float32 qw\n\
+float32 qx\n\
+float32 qy\n\
+float32 qz\n\
 int16 nrobotid\n\
 byte[] data\n\
 \n\
@@ -195,7 +231,13 @@ namespace serialization
     template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
     {
       stream.next(m.header);
-      stream.next(m.tframe);
+      stream.next(m.x);
+      stream.next(m.y);
+      stream.next(m.z);
+      stream.next(m.qw);
+      stream.next(m.qx);
+      stream.next(m.qy);
+      stream.next(m.qz);
       stream.next(m.nrobotid);
       stream.next(m.data);
     }
@@ -219,8 +261,20 @@ struct Printer< ::orb_formation::feature_<ContainerAllocator> >
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);
-    s << indent << "tframe: ";
-    Printer<double>::stream(s, indent + "  ", v.tframe);
+    s << indent << "x: ";
+    Printer<float>::stream(s, indent + "  ", v.x);
+    s << indent << "y: ";
+    Printer<float>::stream(s, indent + "  ", v.y);
+    s << indent << "z: ";
+    Printer<float>::stream(s, indent + "  ", v.z);
+    s << indent << "qw: ";
+    Printer<float>::stream(s, indent + "  ", v.qw);
+    s << indent << "qx: ";
+    Printer<float>::stream(s, indent + "  ", v.qx);
+    s << indent << "qy: ";
+    Printer<float>::stream(s, indent + "  ", v.qy);
+    s << indent << "qz: ";
+    Printer<float>::stream(s, indent + "  ", v.qz);
     s << indent << "nrobotid: ";
     Printer<int16_t>::stream(s, indent + "  ", v.nrobotid);
     s << indent << "data[]" << std::endl;

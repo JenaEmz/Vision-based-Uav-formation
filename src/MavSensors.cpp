@@ -1,11 +1,11 @@
 #include "MavSensors.h"
 
-MavSensors::MavSensors(string name, string cam_name_1, MavState *state) : name_(name), cam_name_1_(cam_name_1), state_(state)
+MavSensors::MavSensors(string name, string cam_name_1) : name_(name), cam_name_1_(cam_name_1)
 {
     left_sub = new message_filters::Subscriber<sensor_msgs::Image>(nh_, name_ + "/stereo/left/image_raw", 1);
     right_sub = new message_filters::Subscriber<sensor_msgs::Image>(nh_, name_ + "/stereo/right/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
-    sync = new message_filters::Synchronizer<sync_pol> (sync_pol(10), *left_sub, *right_sub);
+    sync = new message_filters::Synchronizer<sync_pol>(sync_pol(10), *left_sub, *right_sub);
     sync->registerCallback(boost::bind(&MavSensors::SyncStereoCallback, this, _1, _2));
     //nh_.subscribe(name_ + "/mavros/state", 1, &MavState::MavStateCallback, this);
     /*vo2computer_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/svo/pose_imu", 1, &MavSensors::SvoPoseCallback, this);
@@ -20,17 +20,16 @@ MavSensors::MavSensors(string name, string cam_name_1, MavState *state) : name_(
     send_vision_estimate_ = true;
 
     tfListener_ = new tf2_ros::TransformListener(tfBuffer_);*/
-
 }
 
 MavSensors::~MavSensors()
 {
-    delete left_sub,right_sub,sync,tfListener_;
+    delete left_sub, right_sub, sync, tfListener_;
 }
 
 void MavSensors::SvoPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
 {
-    svo_position_ = *msg;
+    /*svo_position_ = *msg;
     if(!state_->localposeIsOK)return;
     if (ros::Time::now() - last_svo_estimate_ > ros::Duration(1.0))
     {
@@ -85,7 +84,7 @@ void MavSensors::SvoPoseCallback(const geometry_msgs::PoseWithCovarianceStamped:
         {
             ROS_ERROR("%s", ex.what());
         }
-    }
+    }*/
 }
 
 double MavSensors::getYaw(const geometry_msgs::Quaternion &msg)
@@ -103,17 +102,30 @@ void MavSensors::SyncStereoCallback(const sensor_msgs::ImageConstPtr &msg0, cons
 {
     try
     {
-        leftImg_ = cv_bridge::toCvShare(msg0, "mono8")->image;
-        rightImg_ = cv_bridge::toCvShare(msg1, "mono8")->image;
+        if (imgMtx.try_lock())
+        {
+            leftImg_ = cv_bridge::toCvShare(msg0, "mono8")->image.clone();
+            rightImg_ = cv_bridge::toCvShare(msg1, "mono8")->image.clone();
+            if (leftImg_.channels() == 3)
+            {
+                cvtColor(leftImg_, leftImg_, CV_RGB2GRAY);
+                cvtColor(rightImg_, rightImg_, CV_RGB2GRAY);
+            }
+            imgMtx.unlock();
+            cv::imshow(name_,leftImg_);
+            cv::waitKey(1);
+        }
     }
     catch (cv_bridge::Exception &e)
     {
         ROS_ERROR("cv_bridge exception: %s", e.what());
+
+        imgMtx.unlock();
     }
     if (record_img_once)
     {
-        cv::imwrite("/home/jena/csq_ws/"+to_string(img_id) + "_right.jpg", rightImg_);
-        cv::imwrite("/home/jena/csq_ws/"+to_string(img_id) + "_left.jpg", leftImg_);
+        cv::imwrite("/home/jena/csq_ws/"+name_ +"-"+ to_string(img_id) + "_right.jpg", rightImg_);
+        cv::imwrite("/home/jena/csq_ws/"+name_+"-" + to_string(img_id) + "_left.jpg", leftImg_);
         record_img_once = false;
         printf("image recorded\n");
     }
@@ -123,4 +135,11 @@ void MavSensors::RecordImgOnce()
 {
     img_id++;
     record_img_once = true;
+}
+
+void MavSensors::GetStereoImage(cv::Mat &left, cv::Mat &Right)
+{
+    std::lock_guard<std::mutex> lck(imgMtx);
+    leftImg_.copyTo(left);
+    rightImg_.copyTo(Right);
 }

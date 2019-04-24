@@ -1,0 +1,121 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+#debug模式
+IfDebug: 1
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 347.924711
+Camera.fy: 347.924711
+Camera.cx: 311.181370
+Camera.cy: 185.775805
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+
+Camera.width: 752
+Camera.height: 480
+
+# Camera frames per second 
+Camera.fps: 20.0
+
+# stereo baseline times fx
+Camera.bf: 41.77145586700899
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times.
+ThDepth: 35
+
+#--------------------------------------------------------------------------------------------
+# Stereo Rectification. Only if you need to pre-rectify the images.
+# Camera.fx, .fy, etc must be the same as in LEFT.P
+#--------------------------------------------------------------------------------------------
+LEFT.height: 376
+LEFT.width: 672
+LEFT.D: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   data: [-0.1623199565314269, 0.02623472196276505, -0.002979131541697116, -0.003224294070779772, 0.0]
+LEFT.K: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [356.2841797552195, 0.0, 333.09659026948043, 0.0, 353.1672954414121, 195.25650805378962, 0.0, 0.0, 1.0]
+LEFT.R:  !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [0.999818644064296, -0.0007507249407711635, 0.019029329822563328, 0.0006338435341015464, 0.9999809033138278, 0.0061474588274528265, -0.019033581476087774, -0.0061342823316386545, 0.9998000266835708]
+LEFT.P:  !!opencv-matrix
+   rows: 3
+   cols: 4
+   dt: d
+   data: [347.9247105023496, 0.0, 311.18136978149414, 0.0, 0.0, 347.9247105023496, 185.77580451965332, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+RIGHT.height: 376
+RIGHT.width: 672
+RIGHT.D: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   data: [-0.16674312596830884, 0.025172184301622606, -0.001750860433084808, -0.00039094314117761364, 0.0]
+RIGHT.K: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [355.5010966723176, 0.0, 317.666036581952, 0.0, 351.85143435000276, 182.34182041635276, 0.0, 0.0, 1.0]
+RIGHT.R:  !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [0.9999943481024123, -0.0011027596446363675, -0.0031761115216035907, 0.0010832338480777912, 0.9999805456382875, -0.006142877939777083, 0.0031828238502751224, 0.006139402749354601, 0.9999760883972273]
+RIGHT.P:  !!opencv-matrix
+   rows: 3
+   cols: 4
+   dt: d
+   data: [347.9247105023496, 0.0, 311.18136978149414, -41.77145586700899, 0.0, 347.9247105023496, 185.77580451965332, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1200
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500
+
+DictPath: "/home/jena/csq_ws/src/orb_formation/Vocabulary/new_voc.bin"
+model_path: "/home/jena/csq_ws/src/orb_formation/Vocabulary/stats.vstats"
+use_ros_sub : 1

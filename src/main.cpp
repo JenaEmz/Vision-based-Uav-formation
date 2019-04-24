@@ -10,8 +10,9 @@ int main(int argc, char **argv)
     ros::NodeHandle private_nh("~");
     int id;
     private_nh.param("name",id,0);
-    std::cout<<"id:"<<id<<endl;
-    MavPX4 mav_1 = MavPX4(to_string(id));
+    string config_path;
+    private_nh.param("config_file_location",config_path,string(""));
+    MavPX4 mav_1 = MavPX4(to_string(id),config_path);
     ros::Rate* rate_ = new ros::Rate(20.0);
     
     while (ros::ok())

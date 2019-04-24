@@ -40,5 +40,5 @@ private:
     string name_;
     MissionTrajector mission_tarjector_;
 };
-
+int kbhit(void);
 #endif //MAV_STATE

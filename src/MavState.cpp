@@ -1,24 +1,18 @@
 #include "MavState.h"
 
-MavState::MavState(const string name, MavControlLoop *controller) : controller_(controller)
+MavState::MavState(const string& name, MavControlLoop *controller) : controller_(controller)
 {
     //自身控制部分
     name_ = name;
+    MavOk = true;
     state_sub_ = nh_.subscribe(name_ + "/mavros/state", 1, &MavState::MavStateCallback, this);
     local_pose_sub_ = nh_.subscribe(name_ + "/mavros/local_position/pose", 5, &MavState::MavPoseCallback, this);
     vel_sub_ = nh_.subscribe(name_ + "/mavros/local_position/velocity", 1, &MavState::MavVelCallback, this);
-    MavOk = true;
  
-    //多机通信部分
-    request_sub = nh_.subscribe("/request_list",10,&MavState::RequestCallback,this);
-    request_pub = nh_.advertise<px4_csq::colocal_request>("/request_list", 10);
-    self_respons_sub =  nh_.subscribe(name_+"/Respons",10,&MavState::ResponsCallback,this);
-    
-    for(int i=0;i<total_num;i++)
-    {
-        string bitstreamTopic = "/uav"+to_string(i)+"/Respons";
-        other_respons_pubs.emplace_back(nh_.advertise<orb_formation::feature>(bitstreamTopic, 1000, true)); 
-    }
+    self_id = atoi(name_.substr(4,1).c_str());
+    has_colocal_inited = false;
+    if(self_id==0)has_colocal_inited = true;
+    bias<<0,0,0;
 }
 
 MavState::~MavState()
@@ -27,6 +21,13 @@ MavState::~MavState()
 void MavState::MavStateCallback(const mavros_msgs::State::ConstPtr &msg)
 {
     current_state_ = *msg;
+}
+
+void MavState::SetBias(double x,double y,double z)
+{
+    bias(0)+= x - mav_pos(0);
+    bias(1)+= y - mav_pos(1);
+    bias(2)+= z - mav_pos(2);
 }
 
 void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
@@ -44,6 +45,7 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     mav_pos(0) = msg.pose.position.x + bias(0);
     mav_pos(1) = msg.pose.position.y + bias(1);
     mav_pos(2) = msg.pose.position.z + bias(2);
+    //std::cout<< mav_pos(2)<<std::endl;
     mav_q = matrix::Quatf(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
     mav_yaw = matrix::Eulerf(mav_q).psi();
     switch (ctr_type_)
@@ -79,8 +81,28 @@ double MavState::get_yaw()
 {
     return mav_euler(2);
 }
+
+double MavState::get_pos_sp(int axis)
+{
+    return target_pos_(axis);
+}
+double MavState::get_yaw_sp()
+{
+    return target_yaw;
+}
 void MavState::set_yaw_sp(double yaw_sp)
 {
+    if(yaw_sp>M_PI||yaw_sp<-M_PI)
+    {
+        while(yaw_sp>M_PI)
+        {
+            yaw_sp -= 2 * M_PI;
+        }
+        while(yaw_sp<-M_PI)
+        {
+            yaw_sp += 2 * M_PI;
+        }
+    }
     target_yaw = yaw_sp;
 }
 void MavState::set_pos_sp(double x, double y, double z)
@@ -128,17 +150,4 @@ bool MavState::MavEnableControl()
     }
     cout << name_ << " offboard success" << endl;
     return true;
-}
-void MavState::UpdateBias()
-{
-
-}
-void MavState::RequestCallback(const px4_csq::pose_with_state &msg)
-{
-
-}
-
-void MavState::ResponsCallback(const orb_formation::feature msg)
-{
-
 }

@@ -4,6 +4,9 @@ project(px4_csq)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 add_compile_options(-std=c++11)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wno-deprecated-declarations  -O3 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations  -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -14,12 +17,11 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   tf2 
   tf2_ros
-<<<<<<< HEAD
   message_generation
-=======
->>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 )
 find_package(OpenCV REQUIRED COMPONENTS)
+find_package(Eigen3 REQUIRED)
+find_package(Boost REQUIRED COMPONENTS filesystem system thread program_options)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -59,22 +61,17 @@ find_package(OpenCV REQUIRED COMPONENTS)
 #   Message1.msg
 #   Message2.msg
 # )
-<<<<<<< HEAD
 add_message_files(
     FILES
 #   Message1.msg
 #   Message2.msg
     gs_command.msg
-    pose_with_state.msg
     colocal_request.msg
  )
  generate_messages(
    DEPENDENCIES
    std_msgs
  )
-=======
-
->>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -129,11 +126,8 @@ catkin_package(
 #  LIBRARIES px4_csq
 #  CATKIN_DEPENDS mavros roscpp std_msgs
 #  DEPENDS system_lib
-<<<<<<< HEAD
   CATKIN_DEPENDS 
   message_runtime
-=======
->>>>>>> a5c9540809696f42edb9d65a184478f5f2acfc8d
 )
 
 ###########
@@ -146,8 +140,24 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include/Colocal
 )
-add_library(Mav_px4
+
+aux_source_directory("./src/Colocal" DIR_SRCS)
+
+add_library(colocal 
+	${DIR_SRCS}
+)
+target_link_libraries(colocal
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+  ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+  ${PROJECT_SOURCE_DIR}/Thirdparty/FeatureCompress/lib/libLBFC2.so
+)
+add_library(Mav_px4 
 	src/MavCommand.cpp
 	src/MavControlLoop.cpp
 	src/MavNavigator.cpp
@@ -155,15 +165,19 @@ add_library(Mav_px4
 	src/MavSensors.cpp
 	src/MavState.cpp
 )
+
 target_link_libraries(Mav_px4
   ${catkin_LIBRARIES}
+  
   ${OpenCV_LIBRARIES}
+  colocal
 )
 add_executable(px4_csq_node src/main.cpp)
 target_link_libraries(px4_csq_node 
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   Mav_px4
+  colocal
 )
 
 ## Declare a C++ library

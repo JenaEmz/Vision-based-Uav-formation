@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <mutex>
 #include <eigen3/Eigen/Core>
 #include <boost/bind.hpp>
 
@@ -30,19 +31,20 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include "MavState.h"
-
+class MavState;
 using namespace std;
 typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     
 class MavSensors
 {
 public:
-    MavSensors(string name,string cam_name_1,MavState *state);
+    MavSensors(string name,string cam_name_1);
     ~MavSensors();
-
     
     void RecordImgOnce();
     double getYaw(const geometry_msgs::Quaternion &msg);
+    void GetStereoImage(cv::Mat& left,cv::Mat& Right);
+    
 
 private:
     string name_;
@@ -51,6 +53,7 @@ private:
     int img_id = 0;
     MavState *state_;
     cv::Mat leftImg_, rightImg_;
+    std::mutex imgMtx;
 
     ros::NodeHandle nh_;
     tf2_ros::Buffer tfBuffer_;
@@ -77,6 +80,8 @@ private:
     
     message_filters::Synchronizer<sync_pol>* sync;
     void SyncStereoCallback(const sensor_msgs::ImageConstPtr& msg0,const sensor_msgs::ImageConstPtr& msg1);
+
+
 };
 
 #endif //MavSensors

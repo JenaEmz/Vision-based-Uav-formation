@@ -1,0 +1,10 @@
+<launch>
+  <arg name="config_file_location" default="$(find px4_csq)/config/stereo.yaml"/>
+
+  <node pkg="px4_csq" type="px4_csq_node" name="px4_csq" output="screen">
+  <param name="config_file_location" value="$(arg config_file_location)"/>
+  <param name="name" value="0"/>
+  </node>
+
+<arg name="frame" default="/world"/>
+</launch>
