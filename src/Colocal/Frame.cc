@@ -14,9 +14,9 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 Frame::Frame(const cv::Mat &imLeft,
              const cv::Mat &imRight,
              ORBextractor *extractorLeft,
-             ORBextractor *extractorRight, cv::Mat &K, cv::Mat &dist, ORBVocabulary *voc, float baseline, int craft_id,ImageInfo Info) : mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
-                                                                                                                          mCraftID(craft_id), mbFrameValid(false), mpORBvocabulary(voc),
-                                                                                                                          mbf(baseline), mK(K.clone()), mDistCoef(dist.clone())
+             ORBextractor *extractorRight, cv::Mat &K, cv::Mat &dist, ORBVocabulary *voc, float baseline, int craft_id, ImageInfo Info) : mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
+                                                                                                                                          mCraftID(craft_id), mbFrameValid(false), mpORBvocabulary(voc),
+                                                                                                                                          mbf(baseline), mK(K.clone()), mDistCoef(dist.clone())
 {
     mnScaleLevels = mpORBextractorLeft->GetLevels();
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
@@ -55,12 +55,11 @@ Frame::Frame(const cv::Mat &imLeft,
 
     if (mvKeys.empty())
         return;
-
+    std::cout << "Frame has " << N << " left keypoint" << std::endl;
     // UndistortKeyPoints();
     mvKeysUn = mvKeys;
     mvuRight = vector<float>(N, -1);
     mvDepth = vector<float>(N, -1);
-
     mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
     mvbOutlier = vector<bool>(N, false);
     // This is done only for the first Frame (or after a change in the calibration)
@@ -139,6 +138,7 @@ Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &desc
 		mFeatVec.addFeature(nid, i_feature);
 	}*/
     // This is done only for the first Frame (or after a change in the calibration)
+
     if (mbInitialComputations)
     {
         mnMinX = 0.0f;
@@ -160,6 +160,7 @@ Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &desc
     }
     mb = mbf / fx;
     AssignFeaturesToGrid();
+
     ComputeStereoMatches();
 }
     void Frame::ExtractORB(int flag, const cv::Mat &im)
@@ -268,7 +269,7 @@ void Frame::ComputeStereoMatches()
         const float r = 2.0f * mvScaleFactors[mvKeysRight[iR].octave];
         const int maxr = ceil(kpY + r);
         const int minr = floor(kpY - r);
-        for (int yi = minr; yi <= maxr; yi++)
+        for (int yi = minr; yi <= maxr; yi++)   
             vRowIndices[yi].push_back(iR);
     }
 
@@ -277,10 +278,15 @@ void Frame::ComputeStereoMatches()
     // }
     // cout << endl;
     // Set limits for search
-    const float minZ = mbf / fx; // NOTE bug mb没有初始化，mb的赋值在构造函数中放在ComputeStereoMatches函数的后面
+    /*const float minZ = mbf / fx; // NOTE bug mb没有初始化，mb的赋值在构造函数中放在ComputeStereoMatches函数的后面
     const float minD = 0;        // 最小视差, 设置为0即可
     // const float maxD = mbf/minZ;  // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
     const float maxD = 600; // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
+*/
+
+    const float minZ = mb;        // NOTE bug mb没有初始化，mb的赋值在构造函数中放在ComputeStereoMatches函数的后面
+    const float minD = 0;        // 最小视差, 设置为0即可
+    const float maxD = mbf/minZ;  // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
 
     // For each left keypoint search a match in the right image
     vector<pair<int, int>> vDistIdx;
@@ -306,7 +312,7 @@ void Frame::ComputeStereoMatches()
         const float minU = uL - maxD; // 最小匹配范围
         const float maxU = uL - minD; // 最大匹配范围
 
-        if (maxU < 0)
+        if (maxU < 0)   
             continue;
 
         // maxU也能找到
@@ -432,6 +438,7 @@ void Frame::ComputeStereoMatches()
                 // depth 是在这里计算的
                 // depth=baseline*fx/disparity
                 mvDepth[iL] = mbf / disparity;                    // 深度
+                
                 mvuRight[iL] = bestuR;                            // 匹配对在右图的横坐标
                 vDistIdx.push_back(pair<int, int>(bestDist, iL)); // 该特征点SAD匹配最小匹配偏差
             }

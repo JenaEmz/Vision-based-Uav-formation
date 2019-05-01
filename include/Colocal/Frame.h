@@ -1,9 +1,7 @@
 #pragma once
 
-#define FRAME_GRID_ROWS 96
-#define FRAME_GRID_COLS 128
-#define IM_BOUND_X 672.0
-#define IM_BOUND_Y 376.0
+#define FRAME_GRID_ROWS 48
+#define FRAME_GRID_COLS 64
 
 #include "ORBVocabulary.h"
 #include "ORBextractor.h"

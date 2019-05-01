@@ -110,16 +110,18 @@ void MavNavigator::UpdateBias()
     request_pub.publish(msg);
 
     //测试位姿估计
-    /*cv::Mat left0(cv::imread("/home/jena/csq_ws/src/orb_formation/uav0-1_left.jpg", 0));
-    cv::Mat right0(cv::imread("/home/jena/csq_ws/src/orb_formation/uav0-1_right.jpg", 0));
-    cv::Mat left1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_left.jpg", 0));
-    cv::Mat right1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_right.jpg", 0));
+    /*cv::Mat left0(cv::imread("/home/jena/csq_ws/uav0-1_left.jpg", 0));
+    cv::Mat right0(cv::imread("/home/jena/csq_ws/uav0-1_right.jpg", 0));
+    cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
+    cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
     cv::Mat res;
     cv::Mat init_pose = cv::Mat::eye(4, 4, CV_32F);
-    coLocal->TrackFromImage(left0,right0,left1,right1);*/
-    
-    /*cv::Mat left0(cv::imread("/home/jena/csq_ws/src/orb_formation/uav0-1_left.jpg", 0));
-    cv::Mat right0(cv::imread("/home/jena/csq_ws/src/orb_formation/uav0-1_right.jpg", 0));
+    res = coLocal->TrackFromImage(left0,right0,left1,right1);
+    std::cout<<res<<std::endl;*/
+    /*cv::Mat left0(cv::imread("/home/jena/csq_ws/uav0-1_left.jpg", 0));
+    cv::Mat right0(cv::imread("/home/jena/csq_ws/uav0-1_right.jpg", 0));
+    cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
+    cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
 
     //测试 压缩和解压特征点
     std::vector<uchar> bitstream;
@@ -128,8 +130,6 @@ void MavNavigator::UpdateBias()
     msg.data.assign(bitstream.begin(),bitstream.end());
     std::vector<uchar> img_bitstream(msg.data.begin(), msg.data.end());
 
-    cv::Mat left1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_left.jpg", 0));
-    cv::Mat right1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_right.jpg", 0));
     cv::Mat res;
     cv::Mat init_pose = cv::Mat::eye(4, 4, CV_32F);
     
@@ -175,8 +175,8 @@ void MavNavigator::ResponsCallback(const orb_formation::feature::ConstPtr msg)
     
     if(!Extractor_init)
     {
-        cv::Mat left1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_left.jpg", 0));
-        cv::Mat right1(cv::imread("/home/jena/csq_ws/src/orb_formation/uav1-1_right.jpg", 0));
+        cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
+        cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
         std::vector<uchar> bitstream;
         Extractor_init =true;
         coLocal->GenerateFeatureBitstream(left1,right1,bitstream);

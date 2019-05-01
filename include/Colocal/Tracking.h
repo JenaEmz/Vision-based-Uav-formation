@@ -37,11 +37,12 @@ class Tracking
     cv::Mat out_right_1;
     cv::Mat out_left_2;
     cv::Mat out_right_2;
-    cv::Mat show;
 
     ORBVocabulary* mpVocabulary;
 
   public:
+
+    cv::Mat show;
     void traceMap(Frame* frame);
     void draw_match(vector<MapPoint* > mvpMapPoints);
     void StereoInitialization();

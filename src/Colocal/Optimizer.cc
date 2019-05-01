@@ -118,8 +118,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
                 optimizer.addEdge(e);
 
-                //vpEdgesMono.push_back(e);
-                //vnIndexEdgeMono.push_back(i);
+                vpEdgesMono.push_back(e);
+                vnIndexEdgeMono.push_back(i);
             }
             else  // Stereo observation 双目
             {

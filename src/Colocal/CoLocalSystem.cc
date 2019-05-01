@@ -45,7 +45,7 @@ void CoLocalSystem::Encoder_init(const cv::FileStorage &fSettings)
     int imgWidth = fSettings["LEFT.width"];
     int imgHeight = fSettings["LEFT.height"];
     ;
-    int bufferSize = 1;
+    int bufferSize =  1;
     bool inter = true;
     bool stereo = true;
     bool depth = false;
@@ -72,13 +72,17 @@ Tracking *CoLocalSystem::GetTracker()
 }
 bool CoLocalSystem::SetCurrentFrame(cv::Mat &imLeft, cv::Mat &imRight, cv::Mat &Tcw)
 {
-    cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
-    cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
+    //cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
+    //cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
     return mTracker->SetCurrentFrame(imLeft, imRight);
 }
 cv::Mat CoLocalSystem::TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0,cv::Mat &imLeft1, cv::Mat &imRight1)
 {
-    
+    /*cv::remap(imLeft0, imLeft0, M1l, M2l, cv::INTER_LINEAR);
+    cv::remap(imRight0, imRight0, M1r, M2r, cv::INTER_LINEAR);
+    cv::remap(imLeft1, imLeft1, M1l, M2l, cv::INTER_LINEAR);
+    cv::remap(imRight1, imRight1, M1r, M2r, cv::INTER_LINEAR);*/
+    mTracker->show = imLeft0.clone();
     if (!mTracker->TrackStereo(imLeft0, imRight0))
     {
         std::cout << "Failed to set init frame" << std::endl;
@@ -110,8 +114,8 @@ cv::Mat CoLocalSystem::TrackFromBitstream(std::vector<uchar> &img_bitstream, cv:
 }
 void CoLocalSystem::GenerateFeatureBitstream(const cv::Mat &imLeft, const cv::Mat &imRight, std::vector<uchar> &bitstream)
 {
-    cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
-    cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
+    //cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
+    //cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
     std::vector<cv::KeyPoint> keypointsLeft, keypointsRight;
     cv::Mat descriptorsLeft, descriptorsRight;
 

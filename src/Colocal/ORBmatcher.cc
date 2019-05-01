@@ -50,7 +50,7 @@ int ORBmatcher::SearchByBoW(Frame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMa
     myRot = vector<int> (F.N, -1);
     for(int i=0;i<HISTO_LENGTH;i++)
         rotHist[i].reserve(500);
-    const float factor = HISTO_LENGTH/360.0f;
+    const float factor = 1.0f/HISTO_LENGTH;
 
     // We perform the matching over ORB that belong to the same vocabulary node (at a certain level)
     // 将属于同一节点(特定层)的ORB特征进行匹配

@@ -6,8 +6,10 @@
 
 MavCommand::MavCommand(MavNavigator *navigator, MavState *state,MavSensors* sensors,const string& name) : navigator_(navigator), state_(state),sensors_(sensors)
 {
+    if(state_->self_id == 0)
     cmd_thread_ = std::thread(&MavCommand::CommandFromStringThread,this);
     name_ = name;
+    
     gs_cmd_sub_ = nh_.subscribe(name_ + "/gs_cmd", 1, &MavCommand::CommandFromTopic, this);
 
 }

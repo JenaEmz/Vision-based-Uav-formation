@@ -106,7 +106,7 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
         bool success = false;
         if (LoopDetecting())
         {
-            success = RelativePoseEPnp();
+            success = RelativePoseG2o();
             res = mCurrentFrame.mTcw.clone();
             std::cout << "loop detected;" << std::endl;
         }
@@ -175,19 +175,19 @@ cv::Mat Tracking::GetRelPose()
     if (LoopDetecting())
     {
         std::cout << "loop detected;" << std::endl;
-        success = RelativePoseEPnp();
-        if (!success)
-        {
+        //success = RelativePoseEPnp();
+        //if (!success)
+        //{
             success = RelativePoseG2o();
-            std::cout << "PnP failed;" << std::endl;
-        }
+            //std::cout << "PnP failed;" << std::endl;
+        //}
         res = mCurrentFrame.mTcw.clone();
     }
     else
         res = cv::Mat();
     mCurrentFrame.mbFrameValid = false;
     mLastFrame.mbFrameValid = false;
-   
+
     if (success)
     {
         cout << "relative pose is:\n"
@@ -236,6 +236,9 @@ bool Tracking::RelativePoseEPnp()
     int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot);
     // cout << "************come into loop? search bow?**************" << endl;
     // cout << nmatches << endl;
+    for (int i = 0; i < vpMapPointMatches.size(); i++)
+    {
+    }
     if (nmatches < 15)
     {
         std::cout << "not enough matches" << std::endl;
@@ -412,7 +415,7 @@ bool Tracking::RelativePoseG2o()
         }
     }
 
-    draw_match(vpMapPointMatches);
+    //draw_match(vpMapPointMatches);
     // 在特征点上面画图
     // cout << "**************TrackReferenceKeyFrame********************" << endl;
     // cout << nmatchesMap << endl;
@@ -441,14 +444,14 @@ void Tracking::draw_match(vector<MapPoint *> mvpMapPoints)
 
     for (int i = 0; i < mCurrentFrame.mvpMapPoints.size(); i++)
     {
-            // 匹配成功
-            if(mCurrentFrame.mvpMapPoints[i]!=NULL)
+        // 匹配成功
+        if (mCurrentFrame.mvpMapPoints[i] != NULL)
+        {
             cv::circle(show, mCurrentFrame.mvKeysUn[i].pt, 4 * (mCurrentFrame.mvKeysUn[i].octave + 1), cv::Scalar(0, 255, 0), 1);
-        
+        }
     }
 
-    cv::imshow("show", show);
-    cv::waitKey(1);
+    cv::imwrite("/home/jena/csq_ws/debug.jpg", show);
 }
 
 void Tracking::traceMap(Frame *frame)
@@ -628,6 +631,7 @@ bool Tracking::StereoInitialization(cv::Mat &Tcw)
                 mLastFrame.mvpMapPoints[i] = pNewMP;
             }
         }
+       
         cout << "New map created with " << mpMap->mspMapPoints.size() << " points" << endl;
         return true;
         // 步骤4：在局部地图中添加该初始关键帧
