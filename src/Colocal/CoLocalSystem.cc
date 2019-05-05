@@ -59,7 +59,8 @@ void CoLocalSystem::Encoder_init(const cv::FileStorage &fSettings)
     float bf = fSettings["Camera.bf"];
     float mBaseline = bf / fx;
     float mFocalLength = fx;
-    mEncoder = new LBFC2::FeatureCoder(mpVocabulary, codingModel, imgWidth, imgHeight, nLevels, 32, bufferSize, true, stereo, depth, mFocalLength, mBaseline);
+    mEncoder = new LBFC2::FeatureCoder(mpVocabulary, codingModel, imgWidth, imgHeight, nLevels, 32, bufferSize, false, stereo, depth, mFocalLength, mBaseline,1);
+    mDecoder = new LBFC2::FeatureCoder(mpVocabulary, codingModel, imgWidth, imgHeight, nLevels, 32, bufferSize, false, stereo, depth, mFocalLength, mBaseline,2);
 }
 
 CoLocalSystem::~CoLocalSystem()
@@ -70,20 +71,39 @@ Tracking *CoLocalSystem::GetTracker()
 {
     return mTracker;
 }
-bool CoLocalSystem::SetCurrentFrame(cv::Mat &imLeft, cv::Mat &imRight, cv::Mat &Tcw)
+
+bool CoLocalSystem::GenerateLastFrame(cv::Mat &imLeft, cv::Mat &imRight)
+{
+    //cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
+    //cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
+    return mTracker->GenerateLastFrame(imLeft, imRight);
+}
+cv::Mat CoLocalSystem::TrackFromGenerate(cv::Mat& init,cv::Mat &imLeft, cv::Mat &imRight,const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+                                        const std::vector<cv::KeyPoint> &keyPointsRight,const cv::Mat &descriptorRight,
+                                         const std::vector<float> &mvuRight, const std::vector<float> &mvDepth)
+{
+    mTracker->RegenerateLastFrame(init,keyPointsLeft, descriptorLeft, keyPointsRight, descriptorRight, mvuRight, mvDepth);
+    
+    if (!mTracker->SetCurrentFrame(imLeft, imRight))
+    {
+        std::cout << "Failed to set current frame" << std::endl;
+    }
+    return mTracker->GetRelPose();
+}
+bool CoLocalSystem::SetCurrentFrame(cv::Mat &imLeft, cv::Mat &imRight)
 {
     //cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
     //cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
     return mTracker->SetCurrentFrame(imLeft, imRight);
 }
-cv::Mat CoLocalSystem::TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0,cv::Mat &imLeft1, cv::Mat &imRight1)
+cv::Mat CoLocalSystem::TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0,cv::Mat &imLeft1, cv::Mat &imRight1,cv::Mat &init)
 {
     /*cv::remap(imLeft0, imLeft0, M1l, M2l, cv::INTER_LINEAR);
     cv::remap(imRight0, imRight0, M1r, M2r, cv::INTER_LINEAR);
     cv::remap(imLeft1, imLeft1, M1l, M2l, cv::INTER_LINEAR);
     cv::remap(imRight1, imRight1, M1r, M2r, cv::INTER_LINEAR);*/
     mTracker->show = imLeft0.clone();
-    if (!mTracker->TrackStereo(imLeft0, imRight0))
+    if (!mTracker->TrackStereo(imLeft0, imRight0,init))
     {
         std::cout << "Failed to set init frame" << std::endl;
     }
@@ -98,9 +118,8 @@ cv::Mat CoLocalSystem::TrackFromBitstream(std::vector<uchar> &img_bitstream, cv:
     std::vector<unsigned int> vDecVisualWords;
     std::vector<cv::KeyPoint> vDecKeypointsLeft, vDecKeypointsRight;
     cv::Mat decDescriptorsLeft, decDescriptorsRight;
-    
-    mEncoder->decodeImageStereo(img_bitstream, vDecKeypointsLeft, decDescriptorsLeft, vDecKeypointsRight, decDescriptorsRight, vDecVisualWords);
-
+    mDecoder->decodeImageStereo(img_bitstream, vDecKeypointsLeft, decDescriptorsLeft, vDecKeypointsRight, decDescriptorsRight, vDecVisualWords);
+   
     if (!mTracker->TrackStereoBitstream(Tcw, vDecKeypointsLeft, decDescriptorsLeft, vDecVisualWords, vDecKeypointsRight, decDescriptorsRight))
     {
         std::cout << "Failed to set last frame" << std::endl;
@@ -112,13 +131,13 @@ cv::Mat CoLocalSystem::TrackFromBitstream(std::vector<uchar> &img_bitstream, cv:
     }
     return mTracker->GetRelPose();
 }
-void CoLocalSystem::GenerateFeatureBitstream(const cv::Mat &imLeft, const cv::Mat &imRight, std::vector<uchar> &bitstream)
+void CoLocalSystem::GenerateFeatureBitstream(int i,const cv::Mat &imLeft, const cv::Mat &imRight, std::vector<uchar> &bitstream)
 {
     //cv::remap(imLeft, imLeft, M1l, M2l, cv::INTER_LINEAR);
     //cv::remap(imRight, imRight, M1r, M2r, cv::INTER_LINEAR);
     std::vector<cv::KeyPoint> keypointsLeft, keypointsRight;
     cv::Mat descriptorsLeft, descriptorsRight;
-
+    //if(i==0)return;
     //std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
     std::thread threadLeft(&CoLocalSystem::ExtractORB, this, 0, imLeft, std::ref(keypointsLeft), std::ref(descriptorsLeft));
     std::thread threadRight(&CoLocalSystem::ExtractORB, this, 1, imRight, std::ref(keypointsRight), std::ref(descriptorsRight));
@@ -130,7 +149,6 @@ void CoLocalSystem::GenerateFeatureBitstream(const cv::Mat &imLeft, const cv::Ma
 
 void CoLocalSystem::ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyPoint> &vKeys, cv::Mat &descriptors)
 {
-
     if (flag == 0)
     {
         (*mTracker->mpORBextractorLeft)(im, cv::Mat(), vKeys, descriptors);
@@ -139,4 +157,22 @@ void CoLocalSystem::ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyP
     {
         (*mTracker->mpORBextractorRight)(im, cv::Mat(), vKeys, descriptors);
     }
+}
+
+cv::Mat CoLocalSystem::TrackFromKeypoint(cv::Mat &Tcw, std::vector<cv::KeyPoint> &keyPointsLeft,
+                                      cv::Mat &descriptorLeft, std::vector<cv::KeyPoint> &keyPointsRight,
+                                      cv::Mat &descriptorRight,
+                                      const cv::Mat &imLeft, const cv::Mat &imRight)
+{
+    std::vector<unsigned int> vDecVisualWords;
+    if (!mTracker->TrackStereoBitstream(Tcw, keyPointsLeft, descriptorLeft, vDecVisualWords, keyPointsRight, descriptorRight))
+    {
+        std::cout << "Failed to set last frame" << std::endl;
+        return cv::Mat();
+    }
+    if (!mTracker->SetCurrentFrame(imLeft, imRight))
+    {
+        std::cout << "Failed to set current frame" << std::endl;
+    }
+    return mTracker->GetRelPose();
 }

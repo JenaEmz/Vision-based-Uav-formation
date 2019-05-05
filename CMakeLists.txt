@@ -67,6 +67,9 @@ add_message_files(
 #   Message2.msg
     gs_command.msg
     colocal_request.msg
+    frame_ros.msg
+    #Descriptor.msg
+    #CvKeyPoint.msg
  )
  generate_messages(
    DEPENDENCIES
@@ -146,16 +149,22 @@ include_directories(
 )
 
 aux_source_directory("./src/Colocal" DIR_SRCS)
+aux_source_directory("./src/featureCoder" CODER_SRCS)
 
 add_library(colocal 
 	${DIR_SRCS}
 )
+add_library(coder 
+	${CODER_SRCS}
+)
+target_link_libraries(coder ${Boost_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(colocal
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
   ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-  ${PROJECT_SOURCE_DIR}/Thirdparty/FeatureCompress/lib/libLBFC2.so
+  coder
+  #${PROJECT_SOURCE_DIR}/Thirdparty/FeatureCompress/lib/libLBFC2.so
 )
 add_library(Mav_px4 
 	src/MavCommand.cpp

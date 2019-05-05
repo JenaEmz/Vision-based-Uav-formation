@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
     //测试 压缩和解压特征点
     std::vector<uchar> bitstream;
-    coLocal.GenerateFeatureBitstream(left0,right0,bitstream);
+    //coLocal.GenerateFeatureBitstream(left0,right0,bitstream);
 
     cv::Mat left1(cv::imread(pic_path+"/left3.jpg", 0));
     cv::Mat right1(cv::imread(pic_path+"/right3.jpg", 0));

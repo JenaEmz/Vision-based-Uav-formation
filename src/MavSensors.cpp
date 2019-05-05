@@ -140,6 +140,6 @@ void MavSensors::RecordImgOnce()
 void MavSensors::GetStereoImage(cv::Mat &left, cv::Mat &Right)
 {
     std::lock_guard<std::mutex> lck(imgMtx);
-    leftImg_.copyTo(left);
-    rightImg_.copyTo(Right);
+    left = leftImg_.clone();
+    Right = rightImg_.clone();
 }

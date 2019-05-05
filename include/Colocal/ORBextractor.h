@@ -58,7 +58,7 @@ public:
     }
 
     std::vector<cv::Mat> mvImagePyramid;
-
+    void ComputeEmptyPyramid(int rows, int cols);
 protected:
 
     void ComputePyramid(cv::Mat image);
@@ -67,6 +67,7 @@ protected:
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
 
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+    
     std::vector<cv::Point> pattern;
 
     int nfeatures;

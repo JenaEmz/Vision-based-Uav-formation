@@ -11,12 +11,62 @@ bool Frame::mbInitialComputations = true;
 float Frame::mnMinX, Frame::mnMaxX, Frame::mnMinY, Frame::mnMaxY;
 float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 
+/*拷贝构造*/
+
+Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+             const std::vector<cv::KeyPoint> &keyPointsRight,
+             const cv::Mat &descriptorRight, ORBextractor *extractorLeft,
+             ORBextractor *extractorRight, ORBVocabulary *voc, cv::Mat &K, cv::Mat &dist, const float &baseline,
+             const float &thDepth, ImageInfo Info, const std::vector<float> &vuRight, const std::vector<float> &vDepth)
+    : mpORBvocabulary(voc), mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
+      mK(K.clone()), mDistCoef(dist.clone()), mbf(baseline),
+       mvKeys(keyPointsLeft),
+      mvKeysRight(keyPointsRight), mvuRight(vuRight),
+      mvDepth(vDepth), mDescriptors(descriptorLeft), mDescriptorsRight(descriptorRight)
+
+{
+    mvKeysUn = mvKeys;
+    mnScaleLevels = mpORBextractorLeft->GetLevels();
+    mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
+    //mfLogScaleFactor = log(mfScaleFactor);
+    mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
+    mvInvScaleFactors = mpORBextractorLeft->GetInverseScaleFactors();
+    mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
+    mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
+    N = mvKeys.size();
+    mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
+    mvbOutlier = vector<bool>(N, false);
+    if (mbInitialComputations)
+    {
+        mnMinX = 0.0f;
+        mnMaxX = Info.cols;
+        mnMinY = 0.0f;
+        mnMaxY = Info.rows;
+
+        mfGridElementWidthInv = static_cast<float>(FRAME_GRID_COLS) / static_cast<float>(mnMaxX - mnMinX);
+        mfGridElementHeightInv = static_cast<float>(FRAME_GRID_ROWS) / static_cast<float>(mnMaxY - mnMinY);
+
+        fx = K.at<float>(0, 0);
+        fy = K.at<float>(1, 1);
+        cx = K.at<float>(0, 2);
+        cy = K.at<float>(1, 2);
+        invfx = 1.0f / fx;
+        invfy = 1.0f / fy;
+
+        mbInitialComputations = false;
+    }
+    mb = mbf / fx;
+
+    AssignFeaturesToGrid();
+}
+
 Frame::Frame(const cv::Mat &imLeft,
              const cv::Mat &imRight,
              ORBextractor *extractorLeft,
-             ORBextractor *extractorRight, cv::Mat &K, cv::Mat &dist, ORBVocabulary *voc, float baseline, int craft_id, ImageInfo Info) : mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
-                                                                                                                                          mCraftID(craft_id), mbFrameValid(false), mpORBvocabulary(voc),
-                                                                                                                                          mbf(baseline), mK(K.clone()), mDistCoef(dist.clone())
+             ORBextractor *extractorRight, cv::Mat &K, cv::Mat &dist, ORBVocabulary *voc, float baseline, int craft_id, ImageInfo Info)
+    : mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
+      mCraftID(craft_id), mbFrameValid(false), mpORBvocabulary(voc),
+      mbf(baseline), mK(K.clone()), mDistCoef(dist.clone())
 {
     mnScaleLevels = mpORBextractorLeft->GetLevels();
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
@@ -29,6 +79,8 @@ Frame::Frame(const cv::Mat &imLeft,
     thread threadRight(&Frame::ExtractORB, this, 1, imRight);
     threadLeft.join();
     threadRight.join();
+    //cv::imshow("not compress",mpORBextractorLeft->mvImagePyramid[1]);
+    //cv::waitKey(1);
     //debug
     /*if(1){
         cv::Mat img, imgRight;
@@ -91,14 +143,13 @@ Frame::Frame(const cv::Mat &imLeft,
 }
 
 /*
-* @brief 根据压缩-解压后的特征创建帧
-*/
+* @brief 根据压缩-解压后的特征创建*/
 Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
              const std::vector<unsigned int> &visualWords, const std::vector<cv::KeyPoint> &keyPointsRight,
              const cv::Mat &descriptorRight, ORBextractor *extractorLeft,
              ORBextractor *extractorRight, ORBVocabulary *voc, cv::Mat &K, cv::Mat &dist, const float &baseline,
-             const float &thDepth,ImageInfo Info)
-    : mpORBvocabulary(voc), mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight), 
+             const float &thDepth, ImageInfo Info)
+    : mpORBvocabulary(voc), mpORBextractorLeft(extractorLeft), mpORBextractorRight(extractorRight),
       mK(K.clone()), mDistCoef(dist.clone()), mbf(baseline)
 {
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -109,23 +160,25 @@ Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &desc
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
+    mpORBextractorLeft->ComputeEmptyPyramid(Info.rows, Info.cols);
     mvKeys = keyPointsLeft;
-	mvKeysRight = keyPointsRight;
-	mDescriptors = descriptorLeft;
+    mvKeysRight = keyPointsRight;
+    mDescriptors = descriptorLeft;
     mDescriptorsRight = descriptorRight;
 
     mvKeysUn = mvKeys;
     N = mvKeys.size();
-    std::cout<<"Frame has "<<N<<" left keypoint"<<std::endl;
-    
-    mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
-    mvbOutlier = vector<bool>(N,false);
-	if(mvKeys.empty())
-		return;
+    std::cout << "Frame has " << N << " left keypoint" << std::endl;
+
+    mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
+    mvbOutlier = vector<bool>(N, false);
+    if (mvKeys.empty())
+        return;
     mBowVec.clear();
-	mFeatVec.clear();
-	// Convert visual words
-	/*mBowVec.clear();
+    mFeatVec.clear();
+
+    // Convert visual words
+    /*mBowVec.clear();
 	mFeatVec.clear();
      std::cout<<"1";
 	for( unsigned int i_feature = 0; i_feature < visualWords.size(); i_feature++ )
@@ -158,12 +211,12 @@ Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &desc
 
         mbInitialComputations = false;
     }
-    mb = mbf / fx;
-    AssignFeaturesToGrid();
 
-    ComputeStereoMatches();
+    mb = mbf / fx;
+    ComputeCompressedStereoMatches();
+    AssignFeaturesToGrid();
 }
-    void Frame::ExtractORB(int flag, const cv::Mat &im)
+void Frame::ExtractORB(int flag, const cv::Mat &im)
 {
     if (flag == 0)
         (*mpORBextractorLeft)(im, cv::Mat(), mvKeys, mDescriptors);
@@ -233,7 +286,100 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float &y, const fl
 
     return vIndices;
 }
+void Frame::ComputeCompressedStereoMatches()
+{
 
+    mvuRight = vector<float>(N, -1.0f);
+    mvDepth = vector<float>(N, -1.0f);
+
+    const int thOrbDist = (ORBmatcher::TH_HIGH + ORBmatcher::TH_LOW) / 2;
+
+    const int nRows = mpORBextractorLeft->mvImagePyramid[0].rows;
+    //Assign keypoints to row table
+    vector<vector<size_t>> vRowIndices(nRows, vector<size_t>());
+
+    for (int i = 0; i < nRows; i++)
+        vRowIndices[i].reserve(200);
+    const int Nr = mvKeysRight.size();
+
+    for (int iR = 0; iR < Nr; iR++)
+    {
+        const cv::KeyPoint &kp = mvKeysRight[iR];
+        const float &kpY = kp.pt.y;
+        const float r = 2.0f * mvScaleFactors[mvKeysRight[iR].octave];
+        const int maxr = ceil(kpY + r);
+        const int minr = floor(kpY - r);
+        for (int yi = minr; yi <= maxr; yi++)
+        {
+
+            vRowIndices[yi].push_back(iR);
+        }
+    }
+    // Set limits for search
+    const float minZ = mb;
+    const float minD = 0;
+    const float maxD = mbf / minZ;
+    // For each left keypoint search a match in the right image
+    vector<pair<int, int>> vDistIdx;
+    vDistIdx.reserve(N);
+
+    for (int iL = 0; iL < N; iL++)
+    {
+        const cv::KeyPoint &kpL = mvKeys[iL];
+        const int &levelL = kpL.octave;
+        const float &vL = kpL.pt.y;
+        const float &uL = kpL.pt.x;
+        const vector<size_t> &vCandidates = vRowIndices[vL];
+        if (vCandidates.empty())
+            continue;
+        const float minU = uL - maxD;
+        const float maxU = uL - minD;
+
+        if (maxU < 0)
+            continue;
+
+        int bestDist = ORBmatcher::TH_HIGH;
+        size_t bestIdxR = 0;
+
+        const cv::Mat &dL = mDescriptors.row(iL);
+
+        // Compare descriptor to right keypoints
+        for (size_t iC = 0; iC < vCandidates.size(); iC++)
+        {
+            const size_t iR = vCandidates[iC];
+            const cv::KeyPoint &kpR = mvKeysRight[iR];
+
+            if (kpR.octave < levelL - 1 || kpR.octave > levelL + 1)
+                continue;
+
+            const float &uR = kpR.pt.x;
+
+            if (uR >= minU && uR <= maxU)
+            {
+                const cv::Mat &dR = mDescriptorsRight.row(iR);
+                const int dist = ORBmatcher::DescriptorDistance(dL, dR);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestIdxR = iR;
+                }
+            }
+        }
+        if (bestDist < thOrbDist)
+        {
+            // coordinates in image pyramid at keypoint scale
+            const float bestuR = mvKeysRight[bestIdxR].pt.x;
+            float disparity = (uL - bestuR);
+
+            if (disparity >= minD && disparity < maxD)
+            {
+
+                mvDepth[iL] = mbf / disparity;
+                mvuRight[iL] = bestuR;
+            }
+        }
+    }
+}
 void Frame::ComputeStereoMatches()
 {
     // cout << "******************here come in?************************" << endl;
@@ -243,7 +389,6 @@ void Frame::ComputeStereoMatches()
     const int thOrbDist = (ORBmatcher::TH_HIGH + ORBmatcher::TH_LOW) / 2;
 
     const int nRows = mpORBextractorLeft->mvImagePyramid[0].rows;
-
     //Assign keypoints to row table
     // 步骤1：建立特征点搜索范围对应表，一个特征点在一个带状区域内搜索匹配特征点
     // 匹配搜索的时候，不仅仅是在一条横线上搜索，而是在一条横向搜索带上搜索,简而言之，原本每个特征点的纵坐标为1，这里把特征点体积放大，纵坐标占好几行
@@ -269,7 +414,7 @@ void Frame::ComputeStereoMatches()
         const float r = 2.0f * mvScaleFactors[mvKeysRight[iR].octave];
         const int maxr = ceil(kpY + r);
         const int minr = floor(kpY - r);
-        for (int yi = minr; yi <= maxr; yi++)   
+        for (int yi = minr; yi <= maxr; yi++)
             vRowIndices[yi].push_back(iR);
     }
 
@@ -284,9 +429,9 @@ void Frame::ComputeStereoMatches()
     const float maxD = 600; // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
 */
 
-    const float minZ = mb;        // NOTE bug mb没有初始化，mb的赋值在构造函数中放在ComputeStereoMatches函数的后面
-    const float minD = 0;        // 最小视差, 设置为0即可
-    const float maxD = mbf/minZ;  // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
+    const float minZ = mb;         // NOTE bug mb没有初始化，mb的赋值在构造函数中放在ComputeStereoMatches函数的后面
+    const float minD = 0;          // 最小视差, 设置为0即可
+    const float maxD = mbf / minZ; // 最大视差, 对应最小深度 mbf/minZ = mbf/mb = mbf/(mbf/fx) = fx (wubo???)
 
     // For each left keypoint search a match in the right image
     vector<pair<int, int>> vDistIdx;
@@ -312,7 +457,7 @@ void Frame::ComputeStereoMatches()
         const float minU = uL - maxD; // 最小匹配范围
         const float maxU = uL - minD; // 最大匹配范围
 
-        if (maxU < 0)   
+        if (maxU < 0)
             continue;
 
         // maxU也能找到
@@ -437,8 +582,8 @@ void Frame::ComputeStereoMatches()
                 }
                 // depth 是在这里计算的
                 // depth=baseline*fx/disparity
-                mvDepth[iL] = mbf / disparity;                    // 深度
-                
+                mvDepth[iL] = mbf / disparity; // 深度
+
                 mvuRight[iL] = bestuR;                            // 匹配对在右图的横坐标
                 vDistIdx.push_back(pair<int, int>(bestDist, iL)); // 该特征点SAD匹配最小匹配偏差
             }
@@ -613,10 +758,10 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
     }
     else
     {*/
-        mnMinX = 0.0f;
-        mnMaxX = imLeft.cols;
-        mnMinY = 0.0f;
-        mnMaxY = imLeft.rows;
+    mnMinX = 0.0f;
+    mnMaxX = imLeft.cols;
+    mnMinY = 0.0f;
+    mnMaxY = imLeft.rows;
     //}
 }
 

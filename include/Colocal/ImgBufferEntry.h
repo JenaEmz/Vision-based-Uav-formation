@@ -61,8 +61,8 @@ public:
 	bool mbLeft;
 	long long mnImageId;
 
-	int mnCols = 32;
-	int mnRows = 24;
+	int mnCols = 64;
+	int mnRows = 36;
 	float mfGridElementWidthInv;
 	float mfGridElementHeightInv;
 	std::vector<std::vector<std::vector<unsigned int> > > mGrid;

@@ -153,7 +153,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->Xw[0] = Xw.at<float>(0);
                 e->Xw[1] = Xw.at<float>(1);
                 e->Xw[2] = Xw.at<float>(2);
-
+                //printf("kp %f,%f pos,%f,%f,%f\n",kpUn.pt.x, kpUn.pt.y,Xw.at<float>(0),Xw.at<float>(1),Xw.at<float>(2));
+                
                 optimizer.addEdge(e);
 
                 vpEdgesStereo.push_back(e);
@@ -253,6 +254,5 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
     pFrame->SetPose(pose);
-
     return nInitialCorrespondences-nBad;
 }

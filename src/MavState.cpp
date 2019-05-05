@@ -81,7 +81,10 @@ double MavState::get_yaw()
 {
     return mav_euler(2);
 }
-
+void MavState::get_Quaternion(Eigen::Quaterniond& q)
+{
+    q = Eigen::Quaterniond(mav_q(0),mav_q(1),mav_q(2),mav_q(3));
+}
 double MavState::get_pos_sp(int axis)
 {
     return target_pos_(axis);
@@ -120,10 +123,11 @@ void MavState::set_vel_sp(double vx, double vy, double vz)
 
 bool MavState::MavEnableControl()
 {
-    while (!controller_->arm())
+    if (!controller_->arm())
     {
         cout << name_ << " try to arm failed" << endl;
         std::this_thread::sleep_for(std::chrono::duration<double>(1.0));
+        return false;
     }
     cout << name_ << " armed success" << endl;
     
@@ -141,11 +145,9 @@ bool MavState::MavEnableControl()
     vel_msg.header.stamp = ros::Time::now();
     //controller_->set_vel_pub_.publish(vel_msg);
 
-    while (!controller_->setOffboard())
+    if (!controller_->setOffboard())
     {
         cout << name_ << " try to offboard failed" << endl;
-        std::this_thread::sleep_for(std::chrono::duration<double>(1.0));
-        if (i++ > 5)
             return false;
     }
     cout << name_ << " offboard success" << endl;

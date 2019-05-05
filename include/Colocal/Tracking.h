@@ -24,7 +24,6 @@ class Tracking
     cv::Mat mDistCoef;
     float mbf;
     Frame mCurrentFrame;
-    Frame mLastFrame;
     int mTrackFlag;
     float mThDepth;
     Map* mpMap;
@@ -41,15 +40,20 @@ class Tracking
     ORBVocabulary* mpVocabulary;
 
   public:
-
+    Frame mLastFrame;
     cv::Mat show;
     void traceMap(Frame* frame);
     void draw_match(vector<MapPoint* > mvpMapPoints);
     void StereoInitialization();
 
+    bool GenerateLastFrame(const cv::Mat &imRectLeft, const cv::Mat &imRectRight);
+    bool RegenerateLastFrame(cv::Mat &Tcw, const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+                             const std::vector<cv::KeyPoint> &keyPointsRight, const cv::Mat &descriptorRight,
+                             const std::vector<float> &mvuRight, const std::vector<float> &mvDepth);
+
     //new function
-    bool StereoInitialization(cv::Mat& Tcw);
-    bool TrackStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight);
+    bool StereoInitialization(cv::Mat &Tcw);
+    bool TrackStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight,cv::Mat &init);
     //set last frame
     bool TrackStereoBitstream(cv::Mat& Tcw, const std::vector<cv::KeyPoint> &keyPointsLeft,
                                        const cv::Mat &descriptorLeft, const std::vector<unsigned int> &visualWords, 

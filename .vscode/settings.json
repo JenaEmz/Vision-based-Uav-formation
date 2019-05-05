@@ -28,6 +28,7 @@
         "system_error": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "core": "cpp"
     }
 }

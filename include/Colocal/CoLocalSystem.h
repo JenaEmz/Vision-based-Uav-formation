@@ -28,31 +28,44 @@ enum ImageType
 
 class CoLocalSystem
 {
-public:
-    Tracking* GetTracker();
-    CoLocalSystem(const cv::FileStorage& fsSettings);
+  public:
+    Tracking *GetTracker();
+    CoLocalSystem(const cv::FileStorage &fsSettings);
     ~CoLocalSystem();
-    cv::Mat TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0,cv::Mat &imLeft1, cv::Mat &imRight1);
-    cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,int id);
-    void GenerateFeatureBitstream(const cv::Mat &imLeft, const cv::Mat &imRight,std::vector<uchar>& bitstream);
-    cv::Mat TrackFromBitstream(std::vector<uchar>& img_bitstream,cv::Mat& Tcw,const cv::Mat &imLeft, const cv::Mat &imRight);
-    bool SetCurrentFrame( cv::Mat &imLeft, cv::Mat &imRight,cv::Mat& Tcw);
+
+    bool GenerateLastFrame(cv::Mat &imLeft, cv::Mat &imRight);
+    cv::Mat TrackFromGenerate(cv::Mat& init,cv::Mat &imLeft, cv::Mat &imRight,const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+                                        const std::vector<cv::KeyPoint> &keyPointsRight,const cv::Mat &descriptorRight,
+                                         const std::vector<float> &mvuRight, const std::vector<float> &mvDepth);
+    bool SetCurrentFrame(cv::Mat &imLeft, cv::Mat &imRight);
+    cv::Mat TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0, cv::Mat &imLeft1, cv::Mat &imRight1,cv::Mat& init);
+    cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, int id);
+    void GenerateFeatureBitstream(int id,const cv::Mat &imLeft, const cv::Mat &imRight, std::vector<uchar> &bitstream);
+    cv::Mat TrackFromBitstream(std::vector<uchar> &img_bitstream, cv::Mat &Tcw, const cv::Mat &imLeft, const cv::Mat &imRight);
+   
+
     void ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyPoint> &vKeys, cv::Mat &descriptors);
-    //params* mParams; 
-private:
+    //params* mParams;
+    cv::Mat TrackFromKeypoint(cv::Mat &Tcw, std::vector<cv::KeyPoint> &keyPointsLeft,
+                           cv::Mat &descriptorLeft, std::vector<cv::KeyPoint> &keyPointsRight,
+                           cv::Mat &descriptorRight,
+                           const cv::Mat &imLeft, const cv::Mat &imRight);
+    LBFC2::FeatureCoder *mEncoder;
+    LBFC2::FeatureCoder *mDecoder;
+    Tracking *mTracker;
+  private:
     ros::NodeHandle nh;
     cv::FileStorage fsSettings_;
-    
-    Tracking* mTracker;
-    LBFC2::FeatureCoder* mEncoder;
+
     LBFC2::CodingStats codingModel;
     ORBVocabulary mpVocabulary;
     void Encoder_init(const cv::FileStorage &fSettings);
 
-    cv::Mat mImRight,mImLeft;
+    cv::Mat mImRight, mImLeft;
     cv::Mat M1l, M2l, M1r, M2r;
 
     std::mutex mImMutex;
+    std::mutex coderMutex;
 
     int listen_fd;
 };

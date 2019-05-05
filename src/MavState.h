@@ -41,6 +41,7 @@ public:
   void set_yaw_sp(double yaw);
   void set_pos_sp(double x, double y, double z);
   void set_vel_sp(double vx, double vy, double vz);
+void get_Quaternion(Eigen::Quaterniond& q);
   void set_control_mode(ControlType ctr_type)
   {
     ctr_type_ = ctr_type;
@@ -59,6 +60,7 @@ public:
 
   string name_;
   bool has_colocal_inited;
+  mutex pos_mutex_;
   
   friend class MavNavigator;
   void SetBias(double x,double y,double z);
@@ -70,7 +72,7 @@ private:
   ros::NodeHandle nh_;
   ros::Subscriber state_sub_, local_pose_sub_, vel_sub_;
   
-
+  
   mutex vel_setpoint_mutex_;
   mutex pos_setpoint_mutex_;
   ControlType ctr_type_ = NOT_CONTROL;

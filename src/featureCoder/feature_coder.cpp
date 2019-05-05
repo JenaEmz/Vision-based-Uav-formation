@@ -38,7 +38,7 @@ long long FeatureCoder::imageId = 0;
 FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, int imHeight, int maxOctave, int angleBins,
 		int bufferSize, bool inter, bool stereo, bool depth, float focalLength, float baseline, int threads)
 : mModel(model), mVoc(voc), mImWidth(imWidth), mImHeight(imHeight), mLevels(maxOctave), mAngleBins(angleBins),
-  mBufferSize(bufferSize), mbInterPred(inter), mbStereo(stereo), mbMonoDepth(depth), mfFocalLength(focalLength),
+  mBufferSize(0), mbInterPred(inter), mbStereo(stereo), mbMonoDepth(depth), mfFocalLength(focalLength),
   mfBaseline(baseline)
 {
 	mbCurrentViewRight = false;
@@ -322,7 +322,6 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 
 	mCurrentImageBuffer.allocateSpace(numFeatures);
 	std::vector<int> vLutKeyPointToBuffer(decisionsLeft.size(), -1);
-
 	// Encode
 #pragma omp parallel for
 	for( int threadId = 0; threadId < nThreads; threadId++)
@@ -348,7 +347,6 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 	mCurrentImageBuffer.AssignFeatures();
 	mLeftImageBuffer.push_back(mCurrentImageBuffer);
 
-
 	size_t numFeaturesRight = 0;
 
 	if( !mbMonoDepth )
@@ -362,7 +360,7 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 
 		// Pre-calculate decisions for right view
 		std::vector<ModeDecision> decisionsRight(kptsRight.size());
-
+		
 #pragma omp parallel for
 		for( size_t i = 0; i < kptsRight.size(); i++ )
 		{
@@ -376,7 +374,6 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 			decisionsRight[i].keypointId = i;
 			decisionsRight[i].stereoMatch = stereoMatchBufferId >= 0;
 		}
-
 
 
 		for( size_t i = 0; i < decisionsRight.size(); i++ )
@@ -396,6 +393,7 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 		}
 
 		mCurrentImageBuffer.allocateSpace(numFeaturesRight);
+
 
 #pragma omp parallel for
 		for( int threadId = 0; threadId < nThreads; threadId++)
@@ -417,8 +415,6 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 			}
 		}
 
-
-
 		mCurrentImageBuffer.AssignFeatures();
 		mRightImageBuffer.push_back(mCurrentImageBuffer);
 	}
@@ -432,8 +428,10 @@ void FeatureCoder::encodeImageStereo( const std::vector<cv::KeyPoint> &kptsLeft,
 
 	if( mRightImageBuffer.size() > mBufferSize)
 		mRightImageBuffer.pop_front();
-
-
+		
+/*mLeftImageBuffer.clear();mRightImageBuffer.clear();
+mLeftImageBuffer = std::list<ImgBufferEntry>();
+mRightImageBuffer = std::list<ImgBufferEntry>();*/
 	for( int threadId = 0; threadId < nThreads; threadId++)
 	{
 		vEncodeContext[threadId].finish();
@@ -540,7 +538,7 @@ void FeatureCoder::decodeImageStereo( const vector<uchar> &bitstream, std::vecto
 		vLeftFeatureIndex[threadId].push_back(i);
 	}
 
-
+	
 #pragma omp parallel for
 	for( unsigned int threadId = 0; threadId < numThreads; threadId++)
 	{
@@ -554,10 +552,11 @@ void FeatureCoder::decodeImageStereo( const vector<uchar> &bitstream, std::vecto
 			cv::KeyPoint keypoint;
 			cv::Mat descriptor;
 			decodeFeature(keypoint, descriptor, visualWord, globalDecoderContext, globalACDecoderContext);
-			mCurrentImageBuffer.addFeature(i, keypoint, descriptor, visualWord);
+			
+			mCurrentImageBuffer.addFeature(i, keypoint, descriptor, visualWord,-1);
+
 		}
 	}
-
 	kptsLeft = mCurrentImageBuffer.mvKeypoints;
 	descriptorsLeft = mCurrentImageBuffer.mDescriptors;
 
@@ -593,10 +592,10 @@ void FeatureCoder::decodeImageStereo( const vector<uchar> &bitstream, std::vecto
 			cv::KeyPoint keypoint;
 			cv::Mat descriptor;
 			decodeFeature(keypoint, descriptor, visualWord, globalDecoderContext, globalACDecoderContext);
-			mCurrentImageBuffer.addFeature(i, keypoint, descriptor, visualWord);
+			mCurrentImageBuffer.addFeature(i, keypoint, descriptor, visualWord,-1);
 		}
 	}
-
+	
 	kptsRight = mCurrentImageBuffer.mvKeypoints;
 	descriptorsRight = mCurrentImageBuffer.mDescriptors;
 
@@ -761,9 +760,6 @@ void FeatureCoder::decodeFeature(cv::KeyPoint &decKeypoint, cv::Mat &recDescript
 
 	CodingMode mode;
 	decodeMode(globalDecoderContext, mode);
-
-
-
 	if( mode == CodingMode::INTRA)
 	{
 		// Decode

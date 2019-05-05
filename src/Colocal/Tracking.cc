@@ -135,11 +135,12 @@ bool Tracking::TrackStereoBitstream(cv::Mat &Tcw, const std::vector<cv::KeyPoint
     info.rows = rows;
     mLastFrame = Frame(keyPointsLeft, descriptorLeft, visualWords, keyPointsRight, descriptorRight,
                        mpORBextractorLeft, mpORBextractorRight, mpVocabulary, mK, mDistCoef, mbf, mThDepth, info);
+ 
     mLastFrame.mbFrameValid = StereoInitialization(Tcw);
     return mLastFrame.mbFrameValid;
 }
 
-bool Tracking::TrackStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight)
+bool Tracking::GenerateLastFrame(const cv::Mat &imRectLeft, const cv::Mat &imRectRight)
 {
     ImageInfo info;
     info.cols = cols;
@@ -147,7 +148,32 @@ bool Tracking::TrackStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight
     mLastFrame = Frame(imRectLeft, imRectRight,
                        mpORBextractorLeft, mpORBextractorRight, mK, mDistCoef,
                        mpVocabulary, mbf, 0, info);
-    cv::Mat init = cv::Mat::eye(4, 4, CV_32F);
+    //cv::Mat init = cv::Mat::eye(4, 4, CV_32F);
+    return true;
+}
+bool Tracking::RegenerateLastFrame(cv::Mat &Tcw, const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+                                   const std::vector<cv::KeyPoint> &keyPointsRight, const cv::Mat &descriptorRight,
+                                   const std::vector<float> &mvuRight, const std::vector<float> &mvDepth)
+{
+    ImageInfo info;
+    info.cols = cols;
+    info.rows = rows;
+    mLastFrame = Frame(keyPointsLeft, descriptorLeft, keyPointsRight, descriptorRight, mpORBextractorLeft,mpORBextractorRight,
+                       mpVocabulary, mK, mDistCoef, mbf, 0, info, mvuRight, mvDepth);
+    
+    mLastFrame.mbFrameValid = StereoInitialization(Tcw);
+    //cv::Mat init = cv::Mat::eye(4, 4, CV_32F);
+    return mLastFrame.mbFrameValid;
+}
+bool Tracking::TrackStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight,cv::Mat& init)
+{
+    ImageInfo info;
+    info.cols = cols;
+    info.rows = rows;
+    mLastFrame = Frame(imRectLeft, imRectRight,
+                       mpORBextractorLeft, mpORBextractorRight, mK, mDistCoef,
+                       mpVocabulary, mbf, 0, info);
+    //cv::Mat init = cv::Mat::eye(4, 4, CV_32F);
     mLastFrame.mbFrameValid = StereoInitialization(init);
     return mLastFrame.mbFrameValid;
 }
@@ -370,7 +396,7 @@ bool Tracking::RelativePoseG2o()
     // 以currentFrame为基准，然后和后面的lastFrame匹配
     vector<int> rot;
     int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot);
-
+    
     // cout << "************come into loop? search bow?**************" << endl;
     // cout << nmatches << endl;
     // if(nmatches<15)
@@ -507,7 +533,6 @@ void Tracking::StereoInitialization()
                 // 步骤4.2：将3D点构造为MapPoint
                 // 最后一个参数应该是keyframe的ID，这里给个0，不然就是垃圾数据了
                 MapPoint *pNewMP = new MapPoint(x3D, mpMap, &mLastFrame, i);
-
                 // 步骤4.3：为该MapPoint添加属性：
                 // a.观测到该MapPoint的关键帧
                 // b.该MapPoint的描述子
@@ -574,8 +599,7 @@ bool Tracking::StereoInitialization(cv::Mat &Tcw)
     {
         // Set Frame pose to the origin
         // 步骤1：设定初始位姿
-        mLastFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
-
+        mLastFrame.SetPose(Tcw);
         // Create KeyFrame
         // 步骤2：将当前帧构造为初始关键帧
         // mCurrentFrame的数据类型为Frame
@@ -608,6 +632,7 @@ bool Tracking::StereoInitialization(cv::Mat &Tcw)
                 // 步骤4.2：将3D点构造为MapPoint
                 // 最后一个参数应该是keyframe的ID，这里给个0，不然就是垃圾数据了
                 MapPoint *pNewMP = new MapPoint(x3D, mpMap, &mLastFrame, i);
+
                 // 步骤4.3：为该MapPoint添加属性：
                 // a.观测到该MapPoint的关键帧
                 // b.该MapPoint的描述子
