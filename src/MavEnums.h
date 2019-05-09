@@ -14,14 +14,16 @@ enum CommandType
     TAKEINGOFF,
     LANDING,
     MOVING,
-    MISSION
+    MISSION,
+    FORMATION
 };
 enum MissionType
 {
     TAKEOFF,
     LAND,
     MOVE_TO,
-    HOLD
+    HOLD,
+    FORMATE
 };
 struct MissionPoint
 {

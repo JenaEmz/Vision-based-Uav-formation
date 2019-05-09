@@ -10,11 +10,14 @@ MavNavigator::MavNavigator(MavState *state, MavSensors *sensors, const string &c
     request_pub = nh_.advertise<px4_csq::colocal_request>("/request_list", 10);
     self_respons_sub = nh_.subscribe(state->name_ + "/Respons", 10, &MavNavigator::ResponsCallback, this);
 
+    //编队部分
+    formation_target_sub = nh_.subscribe(state->name_ + "/formation_msg", 10, &MavNavigator::ResponsCallback, this);
     for (int i = 0; i < state_->total_num; i++)
     {
         string bitstreamTopic = "/uav" + to_string(i) + "/Respons";
         other_respons_pubs.emplace_back(nh_.advertise<px4_csq::frame_ros>(bitstreamTopic, 1000, true));
     }
+    formation_pos << 0,0,0;
 }
 
 MavNavigator::~MavNavigator()
@@ -84,6 +87,19 @@ bool MavNavigator::Mission(MissionPoint &Mission)
             return true;
         else
             return false;
+        break;
+    case FORMATE:
+        if(state_->has_colocal_inited)
+        {
+            MoveTo(formation_pos(0), formation_pos(1), formation_pos(2),formation_yaw);
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::duration<double>(1));
+            UpdateBias();
+        }
+
+        return false;
         break;
     case HOLD:
         if (Mission.start == false)
@@ -316,12 +332,11 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
     //res = coLocal2->TrackFromImage(left0,right0,left1,right1,init_pose);
     if (!res.empty())
     {
-        std::cout << "colocal1 success:" << res << std::endl;
+        std::cout << "colocal1 success:" << std::endl;
         Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
         SlamToLocalpose(res,ned_q,ned_t);
-        std::cout<<ned_q.w()<<","<<ned_q.x()<<","<<ned_q.y()<<","<<ned_q.z()<<std::endl;
-        std::cout<<ned_t(0)<<","<<ned_t(1)<<","<<ned_t(2)<<","<<std::endl;
-
+        std::cout<<"local position is :"<<ned_t(0)<<","<<ned_t(1)<<","<<ned_t(2)<<","<<std::endl;
+        state_->SetBias(ned_t(0),ned_t(1),-ned_t(2));
         /*std::cout<<msg->qw<<","<<msg->qx<<","<<msg->qy<<","<<msg->qz<<std::endl;
         std::cout<<msg->x<<","<<msg->y<<","<<msg->z<<","<<std::endl;
 
@@ -333,8 +348,16 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
     }
     else
     {
+        state_->has_colocal_inited = false;
         std::cout<<"coloca1 failed"<<std::endl;
     }
+}
+void MavNavigator::FormationCallback(const px4_csq::colocal_request &msg)
+{
+    formation_pos(0) = msg.x;
+    formation_pos(1) = msg.y;
+    formation_pos(2) = msg.z;
+    formation_yaw = msg.yaw;
 }
 /*
 void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)

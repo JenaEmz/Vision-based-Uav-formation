@@ -34,6 +34,8 @@ class MavNavigator
     void ResponsCallback(const px4_csq::frame_rosPtr msg);
     void PubRespons(int id);
 
+    void FormationCallback(const px4_csq::colocal_request &msg);
+
     ros::NodeHandle nh_;
     ros::Subscriber request_sub;
     ros::Publisher request_pub;
@@ -47,8 +49,10 @@ class MavNavigator
     ros::Subscriber self_respons_left_sub;
     ros::Subscriber self_respons_right_sub;
     ros::Subscriber self_respons_info_sub;
-
-    
+    //编队信息
+    ros::Subscriber formation_target_sub;
+    double formation_yaw = 0;
+    Eigen::Vector3d formation_pos;
   private:
     MavState *state_;
     MavSensors *sensors_;

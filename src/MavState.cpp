@@ -28,6 +28,7 @@ void MavState::SetBias(double x,double y,double z)
     bias(0)+= x - mav_pos(0);
     bias(1)+= y - mav_pos(1);
     bias(2)+= z - mav_pos(2);
+    has_colocal_inited = true;
 }
 
 void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)

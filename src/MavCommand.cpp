@@ -64,6 +64,17 @@ void MavCommand::CommandFromTopic(const px4_csq::gs_command& msg)
             mission_quit = false;
             mission_thread_ = std::thread(&MavCommand::MissionThread,this);
             break;
+        case 5:
+            mission_quit = true;
+            if (mission_thread_.joinable())
+                mission_thread_.join();
+            mission_mtx.lock();
+            mission_tarjector_.clear();
+            mission_mtx.unlock();
+            mission_tarjector_.push_back(MissionPoint{MissionType::FORMATE,0,-10,3,0,false});
+            
+            mission_quit = false;
+            mission_thread_ = std::thread(&MavCommand::MissionThread,this);
         case 10:
             sensors_->RecordImgOnce();
     }
