@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <sys/time.h>
 
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -41,7 +42,7 @@ public:
   void set_yaw_sp(double yaw);
   void set_pos_sp(double x, double y, double z);
   void set_vel_sp(double vx, double vy, double vz);
-void get_Quaternion(Eigen::Quaterniond& q);
+  void get_Quaternion(Eigen::Quaterniond& q);
   void set_control_mode(ControlType ctr_type)
   {
     ctr_type_ = ctr_type;

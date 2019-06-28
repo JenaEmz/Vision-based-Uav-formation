@@ -216,13 +216,10 @@ cv::Mat Tracking::GetRelPose()
 
     if (success)
     {
-        cout << "relative pose is:\n"
-             << res << endl;
         return res;
     }
     else
     {
-        std::cout << "relative pose get failed;" << std::endl;
         return cv::Mat();
     }
 }
@@ -259,7 +256,8 @@ bool Tracking::RelativePoseEPnp()
     // cout << "************come into loop? matcher?**************" << endl;
     // 以currentFrame为基准，然后和后面的lastFrame匹配
     vector<int> rot;
-    int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot);
+    vector<int> indexs;
+    int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot,indexs);
     // cout << "************come into loop? search bow?**************" << endl;
     // cout << nmatches << endl;
     for (int i = 0; i < vpMapPointMatches.size(); i++)
@@ -395,8 +393,24 @@ bool Tracking::RelativePoseG2o()
     // cout << "************come into loop? matcher?**************" << endl;
     // 以currentFrame为基准，然后和后面的lastFrame匹配
     vector<int> rot;
-    int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot);
-    
+    vector<int> indexs;
+    int nmatches = matcher.SearchByBoW(&mLastFrame, mCurrentFrame, vpMapPointMatches, rot,indexs);
+
+    /*cv::Mat img(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
+    cv::cvtColor(img,img,cv::COLOR_GRAY2BGR);
+    for(int i =0;i<indexs.size();i++)
+    {
+        int r = 10;
+        cv::Point2f pt1,pt2;
+        pt1.x=mCurrentFrame.mvKeys[indexs[i]].pt.x-r;
+        pt1.y=mCurrentFrame.mvKeys[indexs[i]].pt.y-r;
+        pt2.x=mCurrentFrame.mvKeys[indexs[i]].pt.x+r;
+        pt2.y=mCurrentFrame.mvKeys[indexs[i]].pt.y+r;
+
+        cv::rectangle(img,pt1,pt2,cv::Scalar(0,255,0));
+        cv::circle(img,mCurrentFrame.mvKeys[indexs[i]].pt,4,cv::Scalar(0,255,0),-1);
+        }
+    cv::imwrite("/home/jena/csq_ws/feature_used.jpg",img);*/
     // cout << "************come into loop? search bow?**************" << endl;
     // cout << nmatches << endl;
     // if(nmatches<15)
@@ -694,7 +708,7 @@ bool Tracking::LoopDetecting()
     double score = mpVocabulary->score(CurrentBowVecBowVec, BowVec);
     std::cout << "test score " << score << std::endl;
     ;
-    if (score > 0.015)
+    if (score > 0.065)
         return true;
     return false;
 }

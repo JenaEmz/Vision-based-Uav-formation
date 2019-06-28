@@ -160,7 +160,6 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     mRansacMaxIts = maxIterations;
     mRansacEpsilon = epsilon;
     mRansacMinSet = minSet;
-
     N = mvP2D.size(); // number of correspondences, 所有二维特征点个数
 
     mvbInliersi.resize(N);// inlier index, mvbInliersi记录每次迭代inlier的点
@@ -172,7 +171,6 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     if(nMinInliers<minSet)
         nMinInliers=minSet;
     mRansacMinInliers = nMinInliers;
-
     if(mRansacEpsilon<(float)mRansacMinInliers/N)
         mRansacEpsilon=(float)mRansacMinInliers/N;
 
@@ -212,7 +210,6 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         bNoMore = true;
         return cv::Mat();
     }
-
     // mvAllIndices为所有参与PnP的2D点的索引
     // vAvailableIndices为每次从mvAllIndices中随机挑选mRansacMinSet组3D-2D对应点进行一次RANSAC
     vector<size_t> vAvailableIndices;
@@ -242,7 +239,6 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
 
         // Compute camera pose
         compute_pose(mRi, mti);
-
         // Check inliers
         CheckInliers();
 

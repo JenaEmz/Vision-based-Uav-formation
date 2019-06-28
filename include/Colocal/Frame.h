@@ -15,6 +15,7 @@
 
 #include <opencv2/opencv.hpp>
 using namespace std;
+using namespace cv;
 struct ImageInfo
 {
     int cols;
@@ -31,7 +32,7 @@ public:
     int mCraftID;
     bool mbFrameValid;
     ORBextractor *mpORBextractorLeft, *mpORBextractorRight;
-
+    
     void ExtractORB(int flag, const cv::Mat &im);
     void ComputeCompressedStereoMatches();
     vector<size_t> GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel=-1, const int maxLevel=-1) const;
@@ -183,6 +184,7 @@ public:
     // 单目摄像头，这两个容器中存的都96是-1
     std::vector<float> mvuRight;
     std::vector<float> mvDepth;
+    std::vector<int> mvDist;
     cv::Mat mDescriptors, mDescriptorsRight;
-
+    std::vector<DMatch> matches;
 };

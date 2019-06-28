@@ -27,7 +27,6 @@ void MavState::SetBias(double x,double y,double z)
 {
     bias(0)+= x - mav_pos(0);
     bias(1)+= y - mav_pos(1);
-    bias(2)+= z - mav_pos(2);
     has_colocal_inited = true;
 }
 
@@ -46,7 +45,7 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     mav_pos(0) = msg.pose.position.x + bias(0);
     mav_pos(1) = msg.pose.position.y + bias(1);
     mav_pos(2) = msg.pose.position.z + bias(2);
-    //std::cout<< mav_pos(2)<<std::endl;
+    
     mav_q = matrix::Quatf(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
     mav_yaw = matrix::Eulerf(mav_q).psi();
     switch (ctr_type_)

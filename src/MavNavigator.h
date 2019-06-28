@@ -2,8 +2,10 @@
 #define MAV_NAVIGATOR
 
 #include <iostream>
+#include <random>
 #include <math.h>
 #include <eigen3/Eigen/Core>
+#include <sys/time.h>
 #include "matrix/Quaternion.hpp"
 
 #include "MavState.h"
@@ -59,6 +61,13 @@ class MavNavigator
     cv::FileStorage fsSettings_;
     CoLocalSystem *coLocal;
     CoLocalSystem *coLocal2;
+    int communication_interval = 2;
+    double old_update_bias_time = 0;
+    long last_colocal_time = 0;
+    long current_colocal_time = 0;
+    double colocal_interval = 2;
+    double colocal_interval_offset = 0;
+    std::normal_distribution<> colocal_time_norm{0,0.15};
 };
 
 inline double Distance(double x1, double y1, double x2, double y2)

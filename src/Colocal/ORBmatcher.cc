@@ -35,7 +35,7 @@ ORBmatcher::ORBmatcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbChec
  * @param  vpMapPointMatches F中MapPoints对应的匹配，NULL表示未匹配
  * @return                   成功匹配的数量
  */
-int ORBmatcher::SearchByBoW(Frame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches, vector<int>&  myRot)
+int ORBmatcher::SearchByBoW(Frame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches, vector<int>&  myRot,vector<int>& indexs)
 {
     const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
 
@@ -154,6 +154,7 @@ int ORBmatcher::SearchByBoW(Frame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMa
                             assert(bin>=0 && bin<HISTO_LENGTH);
                             rotHist[bin].push_back(bestIdxF);
                         }
+                        indexs.push_back(bestIdxF);
                         nmatches++;
                     }
                 }

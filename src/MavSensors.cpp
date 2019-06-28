@@ -112,8 +112,8 @@ void MavSensors::SyncStereoCallback(const sensor_msgs::ImageConstPtr &msg0, cons
                 cvtColor(rightImg_, rightImg_, CV_RGB2GRAY);
             }
             imgMtx.unlock();
-            cv::imshow(name_,leftImg_);
-            cv::waitKey(1);
+            //cv::imshow(name_,leftImg_);
+            //cv::waitKey(1);
         }
     }
     catch (cv_bridge::Exception &e)

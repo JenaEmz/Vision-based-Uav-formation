@@ -10,7 +10,8 @@ float Frame::invfx, Frame::invfy;
 bool Frame::mbInitialComputations = true;
 float Frame::mnMinX, Frame::mnMaxX, Frame::mnMinY, Frame::mnMaxY;
 float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
-
+inline
+void getPointsFromMatches(const std::vector<cv::DMatch>& matches, const std::vector<cv::KeyPoint>& keypoints1, const std::vector<cv::KeyPoint>& keypoints2, std::vector<cv::Point2f>& points1, std::vector<cv::Point2f>& points2, std::vector<size_t>& indices1, std::vector<size_t>& indices2);
 /*拷贝构造*/
 
 Frame::Frame(const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
@@ -81,28 +82,7 @@ Frame::Frame(const cv::Mat &imLeft,
     threadRight.join();
     //cv::imshow("not compress",mpORBextractorLeft->mvImagePyramid[1]);
     //cv::waitKey(1);
-    //debug
-    /*if(1){
-        cv::Mat img, imgRight;
-        imLeft.copyTo(img);
-        imRight.copyTo(imgRight);
-        cv::cvtColor(img,img,cv::COLOR_GRAY2BGR);
-        cv::cvtColor(imgRight,imgRight,cv::COLOR_GRAY2BGR);
-        std::for_each(mvKeys.begin(), mvKeys.end(), [&](cv::KeyPoint i) {
-            cv::circle(img, i.pt, 4 * (i.octave + 1), cv::Scalar(0, 255, 0), 1);
-        });
-        std::for_each(mvKeysRight.begin(), mvKeysRight.end(), [&](cv::KeyPoint i) {
-            cv::circle(imgRight, i.pt, 4 * (i.octave + 1), cv::Scalar(0, 255, 0), 1);
-        });
-        // cv::imshow("left extractor", img);
-        // cv::imshow("right extractor", imgRight);
-        // cv::waitKey(0);
-
-        cv::imwrite("/home/zbf/h"+std::to_string(craft_id)+".png",img);
-        cv::imwrite("/home/zbf/h"+std::to_string(craft_id)+"2.png",imgRight);
-    }*/
-
-    //debug end
+    
     N = mvKeys.size();
 
     if (mvKeys.empty())
@@ -112,6 +92,7 @@ Frame::Frame(const cv::Mat &imLeft,
     mvKeysUn = mvKeys;
     mvuRight = vector<float>(N, -1);
     mvDepth = vector<float>(N, -1);
+    mvDist =  vector<int>(N, 999);
     mvpMapPoints = vector<MapPoint *>(N, static_cast<MapPoint *>(NULL));
     mvbOutlier = vector<bool>(N, false);
     // This is done only for the first Frame (or after a change in the calibration)
@@ -140,6 +121,83 @@ Frame::Frame(const cv::Mat &imLeft,
     AssignFeaturesToGrid();
 
     ComputeStereoMatches();
+    //debug
+    /*if(1){
+        cv::Mat img, imgRight;
+        imLeft.copyTo(img);
+        imRight.copyTo(imgRight);
+        cv::cvtColor(img,img,cv::COLOR_GRAY2BGR);
+        cv::cvtColor(imgRight,imgRight,cv::COLOR_GRAY2BGR);
+        for(int i =0;i<mvKeys.size();i++)
+        {
+            if(mvDepth[i]>0&&(1280-mvKeys[i].pt.x)+mvDist[i]*1.8<1200)
+            {
+                int r = 10;
+                cv::Point2f pt1,pt2;
+                pt1.x=mvKeys[i].pt.x-r;
+                pt1.y=mvKeys[i].pt.y-r;
+                pt2.x=mvKeys[i].pt.x+r;
+                pt2.y=mvKeys[i].pt.y+r;
+
+                cv::rectangle(img,pt1,pt2,cv::Scalar(0,255,0));
+                cv::circle(img,mvKeys[i].pt,4,cv::Scalar(0,255,0),-1);
+            }
+        }
+        /*std::for_each(mvKeysRight.begin(), mvKeysRight.end(), [&](cv::KeyPoint i) {
+            cv::circle(imgRight, i.pt, 4 * (i.octave + 1), cv::Scalar(0, 255, 0), 1);
+        });*/
+        // cv::imshow("left extractor", img);
+        // cv::imshow("right extractor", imgRight);
+        // cv::waitKey(0);
+
+        /*cv::imwrite("/home/jena/csq_ws/feature_mark.jpg",img);
+        //cv::imwrite("/home/zbf/h"+std::to_string(craft_id)+"2.png",imgRight);
+    }*/
+
+    //debug end
+     /*Mat outImg(imLeft.rows, imLeft.cols*2, CV_8UC3);
+    Rect rect1(0,0, imLeft.cols, imLeft.rows);
+    Rect rect2(imLeft.cols, 0, imLeft.cols, imLeft.rows);
+    // allow color drawing
+    if (imLeft.type() == CV_8U)
+    {
+        cv::cvtColor(imLeft, outImg(rect1), cv::COLOR_GRAY2BGR);
+        cv::cvtColor(imRight, outImg(rect2), cv::COLOR_GRAY2BGR);
+    }
+    else
+    {
+        imLeft.copyTo(outImg(rect1));
+        imRight.copyTo(outImg(rect2));
+    }
+
+    std::vector<Vec<float,3>> epilines1, epilines2;
+    std::vector<size_t> indices1, indices2;
+    std::vector<Point2f> points2D_l, points2D_r;
+    cv::Mat F = cv::Mat::eye(3, 3, CV_32F);;
+    getPointsFromMatches(matches, mvKeysUn, mvKeysRight, points2D_l, points2D_r, indices1, indices2);
+    computeCorrespondEpilines(points2D_l, 1, F, epilines1);
+    computeCorrespondEpilines(points2D_r, 2, F, epilines2);
+
+    /* epipolar lines of the 1st point set are drawn in the 2nd image and vice-versa */
+    /*cv::RNG rng(0);
+    for(size_t i = 0; i < points2D_l.size(); ++i)
+    {
+        cv::Scalar color(256,256,0);
+        line(outImg(rect2),
+              Point(0,-epilines1[i][2]/epilines1[i][1]),
+              Point(imLeft.cols,-(epilines1[i][2]+epilines1[i][0]*imLeft.cols)/epilines1[i][1]),
+              color);
+        circle(outImg(rect1), points2D_l[i], 3, Scalar(256,256,0), 1, cv::LINE_AA);
+
+        // line(outImg(rect1),
+        //       Point(0,-epilines2[i][2]/epilines2[i][1]),
+        //       Point(imRight.cols,-(epilines2[i][2]+epilines2[i][0]*imRight.cols)/epilines2[i][1]),
+        //       color);
+        circle(outImg(rect2), points2D_r[i], 3, Scalar(256,0,0), -1, cv::LINE_AA);
+    }
+    // show epipolar lines
+    resize(outImg, outImg, cv::Size(1280, 360), (0, 0), (0, 0), cv::INTER_LINEAR);
+    imshow("selected features + corresponding epipolar lines", outImg);*/
 }
 
 /*
@@ -385,6 +443,7 @@ void Frame::ComputeStereoMatches()
     // cout << "******************here come in?************************" << endl;
     mvuRight = vector<float>(N, -1.0f);
     mvDepth = vector<float>(N, -1.0f);
+    matches.reserve(N);
 
     const int thOrbDist = (ORBmatcher::TH_HIGH + ORBmatcher::TH_LOW) / 2;
 
@@ -529,7 +588,6 @@ void Frame::ComputeStereoMatches()
             const float endu = scaleduR0 + L + w + 1;
             if (iniu < 0 || endu >= mpORBextractorRight->mvImagePyramid[kpL.octave].cols)
                 continue;
-
             for (int incR = -L; incR <= +L; incR++)
             {
                 // 横向滑动窗口
@@ -583,9 +641,10 @@ void Frame::ComputeStereoMatches()
                 // depth 是在这里计算的
                 // depth=baseline*fx/disparity
                 mvDepth[iL] = mbf / disparity; // 深度
-
+                mvDist[iL] = bestDist;
                 mvuRight[iL] = bestuR;                            // 匹配对在右图的横坐标
                 vDistIdx.push_back(pair<int, int>(bestDist, iL)); // 该特征点SAD匹配最小匹配偏差
+                matches.push_back(DMatch(iL, bestIdxR, -1));
             }
         }
     }
@@ -603,6 +662,7 @@ void Frame::ComputeStereoMatches()
         {
             mvuRight[vDistIdx[i].second] = -1;
             mvDepth[vDistIdx[i].second] = -1;
+            matches.erase(matches.begin()+vDistIdx[i].second);
         }
     }
     // trace(mvDepth);
@@ -793,4 +853,19 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
         return false;
 
     return true;
+}
+
+
+inline
+void getPointsFromMatches(const std::vector<cv::DMatch>& matches, const std::vector<cv::KeyPoint>& keypoints1, const std::vector<cv::KeyPoint>& keypoints2, std::vector<cv::Point2f>& points1, std::vector<cv::Point2f>& points2, std::vector<size_t>& indices1, std::vector<size_t>& indices2)
+{
+    indices1.reserve(matches.size());
+    indices2.reserve(matches.size());
+    for(size_t i = 0; i < matches.size(); ++i)
+    {
+        points1.push_back(keypoints1[matches[i].queryIdx].pt);
+        points2.push_back(keypoints2[matches[i].trainIdx].pt);
+        indices1.push_back(matches[i].queryIdx);
+        indices2.push_back(matches[i].trainIdx);
+    }
 }
