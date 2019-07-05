@@ -75,5 +75,7 @@ inline double Distance(double x1, double y1, double x2, double y2)
     return sqrt(pow((x1 - x2), 2) + pow((y1 - y2), 2));
 }
 void LocalposeToSlam(const Eigen::Quaterniond &ned_q, const Eigen::Vector3d &ned_t,cv::Mat& Tcw);
+void LocalposeToSlam_test(const Eigen::Quaterniond &enu_q, const Eigen::Vector3d &enu_t,cv::Mat& Tcw);
 void SlamToLocalpose(const cv::Mat& Tcw,Eigen::Quaterniond &ned_q, Eigen::Vector3d &ned_t);
+void SlamToLocalpose_test(const cv::Mat& Tcw,Eigen::Quaterniond &enu_q, Eigen::Vector3d &enu_t);
 #endif //MAV_STATE

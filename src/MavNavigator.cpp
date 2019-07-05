@@ -199,18 +199,18 @@ void MavNavigator::PubRespons(int id)
     msg.nrobotid = state_->self_id;
     cv::Mat right, left;
     //std::cout << "Pub respons from:" << state_->self_id << std::endl;
-    //sensors_->GetStereoImage(left, right);
+    sensors_->GetStereoImage(left, right);
     
     //cv::imwrite("/home/jena/csq_ws/wrong_0_0.jpg",left);
     //cv::imwrite("/home/jena/csq_ws/wrong_0_1.jpg",right);
    
-    //cv::Mat left0(cv::imread("/home/jena/csq_ws/uav0-1_left.jpg", 0));
-    //cv::Mat right0(cv::imread("/home/jena/csq_ws/uav0-1_right.jpg", 0));
     //coLocal->GenerateFeatureBitstream(1,left0,right0,bitstream);
     std::vector<uchar> bitstream;
     //coLocal->GenerateFeatureBitstream(1,left0, right0, bitstream);
+    //test
     cv::Mat left0(cv::imread("/home/jena/csq_ws/uav0-1_left.jpg", 0));
     cv::Mat right0(cv::imread("/home/jena/csq_ws/uav0-1_right.jpg", 0));
+    //test end
     coLocal->GenerateLastFrame(left0,right0);
     std::vector<cv::KeyPoint> keyPointsLeft = coLocal->mTracker->mLastFrame.mvKeys;
     cv::Mat descriptorLeft = coLocal->mTracker->mLastFrame.mDescriptors;
@@ -224,7 +224,7 @@ void MavNavigator::PubRespons(int id)
     //std::cout<<bitstream.size()<<" size"<<std::endl;
     msg.x = state_->mav_pos(0);
     msg.y = state_->mav_pos(1);
-    msg.z = state_->mav_pos(2);
+    msg.z = 3;//state_->mav_pos(2);
     msg.qw = state_->mav_q(0);
     msg.qx = state_->mav_q(1);
     msg.qy = state_->mav_q(2);
@@ -247,7 +247,6 @@ void SE3ToCv(const Eigen::Quaterniond &t_Q, const Eigen::Vector3d &t, cv::Mat &c
             cvMat.at<float>(i, j) = t_R(i, j);
         }
     }
-
     for (int i = 0; i < 3; i++)
     {
         cvMat.at<float>(i, 3) = t(i);
@@ -298,6 +297,12 @@ void LocalposeToSlam(const Eigen::Quaterniond &ned_q, const Eigen::Vector3d &ned
     SE3ToCv(enu_q,enu_t,Twc);
     toCvMatInverse(Twc,Tcw);
 }
+void LocalposeToSlam_test(const Eigen::Quaterniond &enu_q, const Eigen::Vector3d &enu_t,cv::Mat& Tcw)
+{
+    cv::Mat Twc = cv::Mat::eye(4, 4, CV_32F);
+    SE3ToCv(enu_q,enu_t,Twc);
+    toCvMatInverse(Twc,Tcw);
+}
 
 void SlamToLocalpose(const cv::Mat& Tcw,Eigen::Quaterniond &ned_q, Eigen::Vector3d &ned_t)
 {
@@ -309,20 +314,35 @@ void SlamToLocalpose(const cv::Mat& Tcw,Eigen::Quaterniond &ned_q, Eigen::Vector
    
     CvToSE3(Tcw,ned_q,ned_t);
 }
+void SlamToLocalpose_test(const cv::Mat& Tcw,Eigen::Quaterniond &enu_q, Eigen::Vector3d &enu_t)
+{
+    cv::Mat Twc = cv::Mat::eye(4, 4, CV_32F);;
+    Eigen::Vector3d ned_t;
+    Eigen::Quaterniond ned_q ;
+    
+    toCvMatInverse(Tcw,Twc);
+    CvToSE3(Tcw,ned_q,ned_t);
+    enu_q  = Eigen::Quaterniond(ned_q.w(),ned_q.x(),ned_q.z(),ned_q.y());
+    enu_t << ned_t(0),ned_t(2),ned_t(1);
+}
 
 void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
 {
     //std::cout<<img_bitstream.size()<<" size"<<std::endl;
     //Eigen::Quaterniond msg_q(msg->qw,msg->qx,msg->qy,msg->qz);
-    Eigen::Quaterniond msg_q(msg->qw,msg->qx,msg->qy,msg->qz);
-    Eigen::Vector3d msg_t(msg->x,msg->y,msg->z);
+    Eigen::Quaterniond msg_q(-1,0,0,0);
+    //Eigen::Vector3d msg_t(msg->x,msg->y,msg->z);
+    Eigen::Vector3d msg_t(0,0,3);
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
-    
-    //LocalposeToSlam(msg_q,msg_t,pose);
+    /*std::cout <<"q is "<<new_q.w()<<" "<<new_q.x()<<" "<<new_q.y()<<" "<<new_q.z()<<std::endl;
+    std::cout <<"t is "<<msg_t<<std::endl;
+    cv::Mat pose2 = cv::Mat::eye(4, 4, CV_32F);*/
+    //LocalposeToSlam_test(new_q,msg_t,pose2);
+    //std::cout<<"twc is "<<pose2<<std::endl;
 
     //std::cout << "The " << state_->self_id << " get respons from " << msg->nrobotid << std::endl;
     cv::Mat right, left;
-    sensors_->GetStereoImage(left, right);
+    //sensors_->GetStereoImage(left, right);
     //cv::imshow("1111",left);
     //cv::waitKey(1);
     //cv::imwrite("/home/jena/csq_ws/wrong_1_0.jpg",left);
@@ -337,8 +357,8 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
     }
     std::vector<uchar> bitstream(msg->data.begin(), msg->data.end());
     //test
-    cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
-    cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
+    cv::Mat left1(cv::imread("/home/jena/csq_ws/uav0-2_left.jpg", 0));
+    cv::Mat right1(cv::imread("/home/jena/csq_ws/uav0-2_right.jpg", 0));
     //test end
     std::vector<cv::KeyPoint> vDecKeypointsLeft;
     cv::Mat decDescriptorsLeft ;
@@ -357,15 +377,23 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
     //res = coLocal2->TrackFromImage(left0,right0,left1,right1,init_pose);
     if (!res.empty())
     {
-        std::cout << res << std::endl;
+        
+        std::cout <<"res"<< res << std::endl;
         Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
-        SlamToLocalpose(res,ned_q,ned_t);
+        SlamToLocalpose_test(res,ned_q,ned_t);
+
+        Eigen::Quaterniond rot_q( 0.707 ,0, 0,0.707);
+        Eigen::Quaterniond new_q = (ned_q*rot_q*msg_q);
+        std::cout<<"q:"<<new_q.coeffs()<<std::endl;
+        Eigen::Vector3d new_t = new_q* ned_t + msg_t;
+
         std::cout << "The " << state_->self_id << " get respons from " << msg->nrobotid;
-        std::cout<<" and local position is :"<<msg->x-ned_t(2)<<","<<msg->y+ned_t(0)<<","<<msg->z-ned_t(1)<<","<<std::endl;
+        //std::cout<<" and local position is :"<<msg->x-ned_t(2)<<","<<msg->y+ned_t(0)<<","<<msg->z-ned_t(1)<<","<<std::endl;
+        std::cout<<" and local position is :"<<new_t(0)<<","<<new_t(1)<<","<<new_t(2)<<","<<std::endl;
         if(state_->has_colocal_inited == false)
         {
-            
-            state_->SetBias(msg->x-ned_t(2),msg->y+ned_t(0),3);
+            //state_->SetBias(msg->x-ned_t(2),msg->y+ned_t(0),3);
+            state_->SetBias(ned_t(2),ned_t(0),3);
         }
         else
         {

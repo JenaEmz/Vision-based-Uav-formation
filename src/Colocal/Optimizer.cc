@@ -75,7 +75,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     const float deltaMono = sqrt(5.991);
     const float deltaStereo = sqrt(7.815);
-
     // 步骤3：添加一元边：相机投影模型
     {
     // unique_lock<mutex> lock(MapPoint::mGlobalMutex);
@@ -165,7 +164,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     }
     }
 
-
     if(nInitialCorrespondences<3)
         return 0;
 
@@ -181,11 +179,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     int nBad=0;
     for(size_t it=0; it<4; it++)
     {
-
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         optimizer.initializeOptimization(0);// 对level为0的边进行优化
         optimizer.optimize(its[it]);
-
         nBad=0;
         for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
         {
@@ -215,7 +211,6 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             if(it==2)
                 e->setRobustKernel(0); // 除了前两次优化需要RobustKernel以外, 其余的优化都不需要
         }
-
         for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
         {
             g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
@@ -244,11 +239,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             if(it==2)
                 e->setRobustKernel(0);
         }
-
         if(optimizer.edges().size()<10)
             break;
     }    
-
     // Recover optimized pose and return number of inliers
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
     g2o::SE3Quat SE3quat_recov = vSE3_recov->estimate();

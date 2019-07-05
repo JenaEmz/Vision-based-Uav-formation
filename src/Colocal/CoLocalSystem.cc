@@ -158,7 +158,6 @@ void CoLocalSystem::ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyP
         (*mTracker->mpORBextractorRight)(im, cv::Mat(), vKeys, descriptors);
     }
 }
-
 cv::Mat CoLocalSystem::TrackFromKeypoint(cv::Mat &Tcw, std::vector<cv::KeyPoint> &keyPointsLeft,
                                       cv::Mat &descriptorLeft, std::vector<cv::KeyPoint> &keyPointsRight,
                                       cv::Mat &descriptorRight,

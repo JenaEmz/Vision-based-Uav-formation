@@ -29,6 +29,7 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "string": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "ostream": "cpp"
     }
 }

@@ -188,7 +188,7 @@ bool Tracking::SetCurrentFrame(const cv::Mat &imRectLeft, const cv::Mat &imRectR
                           mpORBextractorLeft, mpORBextractorRight, mK, mDistCoef,
                           mpVocabulary, mbf, 0, info);
 
-    mCurrentFrame.mbFrameValid = mCurrentFrame.N > 500;
+    mCurrentFrame.mbFrameValid = mCurrentFrame.N > 300;
 
     return mCurrentFrame.mbFrameValid;
 }
@@ -708,7 +708,7 @@ bool Tracking::LoopDetecting()
     double score = mpVocabulary->score(CurrentBowVecBowVec, BowVec);
     std::cout << "test score " << score << std::endl;
     ;
-    if (score > 0.065)
+    if (score > 0.055)
         return true;
     return false;
 }
