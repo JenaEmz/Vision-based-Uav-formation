@@ -7,10 +7,10 @@
 IfDebug: 1
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 762.72
-Camera.fy: 762.72
-Camera.cx: 640
-Camera.cy: 360
+Camera.fx: 793.437027
+Camera.fy: 793.437027
+Camera.cx: 582.905060
+Camera.cy: 360.755043
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -24,13 +24,13 @@ Camera.height: 720
 Camera.fps: 20.0
 
 # stereo baseline times fx
-Camera.bf: 53.3904
+Camera.bf: 55.473110
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
 # Close/Far threshold. Baseline times.
-ThDepth: 35
+ThDepth: 20
 
 #--------------------------------------------------------------------------------------------
 # Stereo Rectification. Only if you need to pre-rectify the images.
@@ -42,12 +42,12 @@ LEFT.D: !!opencv-matrix
    rows: 1
    cols: 5
    dt: d
-   data: [0,0,0,0, 0.0]
+   data: [-0.0009614397245465714, 3.2280456547513854e-05, 0.00016988459892042698, 2.225555018733079e-05, 0.0]
 LEFT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [762.72, 0.0, 640.0828882065675, 0.0, 762.72, 360.3515546907214, 0.0, 0.0, 1.0]
+   data: [761.562770950302, 0.0, 640.0828882065675, 0.0, 761.5949531531136, 360.3515546907214, 0.0, 0.0, 1.0]
 LEFT.R:  !!opencv-matrix
    rows: 3
    cols: 3
@@ -57,7 +57,7 @@ LEFT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [762.72, 0.0, 640, 0.0, 0.0, 762.72, 360, 0.0, 0.0, 0.0, 1.0, 0.0]
+   data: [793.4370268964161, 0.0, 582.9050598144531, 0.0, 0.0, 793.4370268964161, 360.75504302978516, 0.0, 0.0, 0.0, 1.0, 0.0]
 
 RIGHT.height: 720
 RIGHT.width: 1280
@@ -65,12 +65,12 @@ RIGHT.D: !!opencv-matrix
    rows: 1
    cols: 5
    dt: d
-   data: [0,0,0,0, 0.0]
+   data: [0.00020635873740762256, -0.0008716087935915415, 9.387548244446774e-06, 0.00020943775648397375, 0.0]
 RIGHT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [762.72, 0.0, 640, 0.0, 762.72, 360, 0.0, 0.0, 1.0]
+   data: [758.6473964798594, 0.0, 642.8167137438318, 0.0, 758.5097901094495, 361.20642313172874, 0.0, 0.0, 1.0]
 RIGHT.R:  !!opencv-matrix
    rows: 3
    cols: 3
@@ -80,7 +80,7 @@ RIGHT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [762.721, 0.0, 640, -53.3904, 0.0, 762.72, 360, 0.0, 0.0, 0.0, 1.0, 0.0]
+   data: [793.4370268964161, 0.0, 582.9050598144531, -55.47310958068293, 0.0, 793.4370268964161, 360.75504302978516, 0.0, 0.0, 0.0, 1.0, 0.0]
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
@@ -99,7 +99,7 @@ ORBextractor.nLevels: 8
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast			
-ORBextractor.iniThFAST: 20
+ORBextractor.iniThFAST: 10
 ORBextractor.minThFAST: 7
 
 #--------------------------------------------------------------------------------------------

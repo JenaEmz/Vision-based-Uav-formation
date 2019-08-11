@@ -4,8 +4,8 @@ MavControlLoop::MavControlLoop(const string name)
 {
     name_ = name;
     set_vel_pub_ = nh_.advertise<mavros_msgs::PositionTarget>(name_+"/mavros/setpoint_raw/local", 10);
-    pos_P_ << 0.4, 0, 0,
-        0, 0.4, 0,
+    pos_P_ << 0.3, 0, 0,
+        0, 0.3, 0,
         0, 0, 0.5;
     set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>(name_+"/mavros/set_mode");
 }
@@ -35,7 +35,7 @@ void MavControlLoop::ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d 
                     mavros_msgs::PositionTarget::FORCE | mavros_msgs::PositionTarget::IGNORE_YAW;
     
     Eigen::Vector3d vel_sp = pos_P_ * (pos_sp - pos);
-    ConstrainVector(vel_sp, 1.5,1.5);
+    ConstrainVector(vel_sp, 1.0,1.0);
     vel_msg.velocity.x = vel_sp(0);
     vel_msg.velocity.y = vel_sp(1);
     vel_msg.velocity.z = vel_sp(2);

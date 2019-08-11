@@ -87,7 +87,7 @@ Frame::Frame(const cv::Mat &imLeft,
 
     if (mvKeys.empty())
         return;
-    std::cout << "Frame has " << N << " left keypoint" << std::endl;
+    //std::cout << "Frame has " << N << " left keypoint" << std::endl;
     // UndistortKeyPoints();
     mvKeysUn = mvKeys;
     mvuRight = vector<float>(N, -1);

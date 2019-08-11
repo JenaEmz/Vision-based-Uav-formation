@@ -575,7 +575,7 @@ void Tracking::StereoInitialization()
             }
         }
 
-        cout << "New map created with " << mpMap->mspMapPoints.size() << " points" << endl;
+        //cout << "New map created with " << mpMap->mspMapPoints.size() << " points" << endl;
 
         // 步骤4：在局部地图中添加该初始关键帧
         // mpLocalMapper->InsertKeyFrame(pKFini);
@@ -671,7 +671,7 @@ bool Tracking::StereoInitialization(cv::Mat &Tcw)
             }
         }
        
-        cout << "New map created with " << mpMap->mspMapPoints.size() << " points" << endl;
+        //cout << "New map created with " << mpMap->mspMapPoints.size() << " points" << endl;
         return true;
         // 步骤4：在局部地图中添加该初始关键帧
         // mpLocalMapper->InsertKeyFrame(pKFini);
@@ -706,9 +706,9 @@ bool Tracking::LoopDetecting()
     const DBoW2::BowVector &BowVec = mLastFrame.mBowVec;
     const DBoW2::BowVector &CurrentBowVecBowVec = mCurrentFrame.mBowVec;
     double score = mpVocabulary->score(CurrentBowVecBowVec, BowVec);
-    std::cout << "test score " << score << std::endl;
+    //std::cout << "test score " << score << std::endl;
     ;
-    if (score > 0.055)
+    if (score > 0.065)
         return true;
     return false;
 }
