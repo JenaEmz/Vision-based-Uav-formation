@@ -1,108 +1,185 @@
-#pragma once
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+/**
+* This file is part of ORB-SLAM2.
+*
+* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
+* For more information see <https://github.com/raulmur/ORB_SLAM2>
+*
+* ORB-SLAM2 is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* ORB-SLAM2 is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+*/
 
-#include <string>
-#include <iostream>
-#include <mutex>
-#include <sys/socket.h>
 
-#include <geometry_msgs/PoseStamped.h>
-#include <ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+#include<string>
+#include<thread>
+#include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
+#include "FrameDrawer.h"
+#include "MapDrawer.h"
+#include "Map.h"
+#include "LocalMapping.h"
+#include "LoopClosing.h"
+#include "KeyFrameDatabase.h"
+#include "ORBVocabulary.h"
+#include "Viewer.h"
 #include "feature_coder.h"
 
-using namespace std;
-enum ImageType
+namespace ORB_SLAM2
 {
-    OpenCv = 0,
-    RosCallback
-};
 
-class CoLocalSystem
+class Viewer;
+class FrameDrawer;
+class Map;
+class Tracking;
+class LocalMapping;
+class LoopClosing;
+
+class System
 {
-  public:
-    Tracking *GetTracker();
-    CoLocalSystem(const cv::FileStorage &fsSettings);
-    ~CoLocalSystem();
+public:
+    // Input sensor
+    enum eSensor{
+        MONOCULAR=0,
+        STEREO=1,
+        RGBD=2
+    };
 
-    bool GenerateLastFrame(cv::Mat &imLeft, cv::Mat &imRight);
-    cv::Mat TrackFromGenerate(cv::Mat& init,cv::Mat &imLeft, cv::Mat &imRight,const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
-                                        const std::vector<cv::KeyPoint> &keyPointsRight,const cv::Mat &descriptorRight,
-                                         const std::vector<float> &mvuRight, const std::vector<float> &mvDepth);
-    bool SetCurrentFrame(cv::Mat &imLeft, cv::Mat &imRight);
-    cv::Mat TrackFromImage(cv::Mat &imLeft0, cv::Mat &imRight0, cv::Mat &imLeft1, cv::Mat &imRight1,cv::Mat& init);
-    cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, int id);
-    void GenerateFeatureBitstream(int id,const cv::Mat &imLeft, const cv::Mat &imRight, std::vector<uchar> &bitstream);
-    cv::Mat TrackFromBitstream(std::vector<uchar> &img_bitstream, cv::Mat &Tcw, const cv::Mat &imLeft, const cv::Mat &imRight);
-   
+public:
 
+    // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
+    System(const cv::FileStorage &fsSettings, bool use_viewer);
+
+    // Proccess the given stereo frame. Images must be synchronized and rectified.
+    // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
+    // Returns the camera pose (empty if tracking fails).
+    cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp);
+
+    // This stops local mapping thread (map building) and performs only camera tracking.
+    void ActivateLocalizationMode();
+    // This resumes local mapping thread and performs SLAM again.
+    void DeactivateLocalizationMode();
+
+    // Returns true if there have been a big map change (loop closure, global BA)
+    // since last call to this function
+    bool MapChanged();
+
+    // Reset the system (clear map)
+    void Reset();
+
+    // All threads will be requested to finish.
+    // It waits until all threads have finished.
+    // This function must be called before saving the trajectory.
+    void Shutdown();
+
+    // Save camera trajectory in the TUM RGB-D dataset format.
+    // Only for stereo and RGB-D. This method does not work for monocular.
+    // Call first Shutdown()
+    // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
+    void SaveTrajectoryTUM(const string &filename);
+
+    // Save keyframe poses in the TUM RGB-D dataset format.
+    // This method works for all sensor input.
+    // Call first Shutdown()
+    // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
+    void SaveKeyFrameTrajectoryTUM(const string &filename);
+
+    // Save camera trajectory in the KITTI dataset format.
+    // Only for stereo and RGB-D. This method does not work for monocular.
+    // Call first Shutdown()
+    // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
+    void SaveTrajectoryKITTI(const string &filename);
+
+    // TODO: Save/Load functions
+    // SaveMap(const string &filename);
+    // LoadMap(const string &filename);
+
+    // Information from most recent processed frame
+    // You can call this right after TrackMonocular (or stereo or RGBD)
+    int GetTrackingState();
+    std::vector<MapPoint*> GetTrackedMapPoints();
+    std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
+
+    void Encoder_init(const cv::FileStorage &fSettings);
+    cv::Mat TrackFromBitstream(cv::Mat &init, cv::Mat &imLeft, cv::Mat &imRight, const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
+                               const std::vector<cv::KeyPoint> &keyPointsRight, const cv::Mat &descriptorRight,
+                               const std::vector<float> &mvuRight, const std::vector<float> &mvDepth, bool insert_key,int msg_id);
+    void GenerateBitstream(cv::Mat &imLeft,cv::Mat &imRight, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size);
     void ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyPoint> &vKeys, cv::Mat &descriptors);
-    //params* mParams;
-    cv::Mat TrackFromKeypoint(cv::Mat &Tcw, std::vector<cv::KeyPoint> &keyPointsLeft,
-                           cv::Mat &descriptorLeft, std::vector<cv::KeyPoint> &keyPointsRight,
-                           cv::Mat &descriptorRight,
-                           const cv::Mat &imLeft, const cv::Mat &imRight);
     LBFC2::FeatureCoder *mEncoder;
     LBFC2::FeatureCoder *mDecoder;
-    Tracking *mTracker;
-  private:
-    ros::NodeHandle nh;
-    cv::FileStorage fsSettings_;
-
     LBFC2::CodingStats codingModel;
-    ORBVocabulary mpVocabulary;
-    void Encoder_init(const cv::FileStorage &fSettings);
+    void AddTraj(double x, double y, double z, int agent_id);
+    void AddComm(double x1, double y1, double z1, int a1,double x2,double y2,double z2,int a2);
+    
+private:
 
-    cv::Mat mImRight, mImLeft;
-    cv::Mat M1l, M2l, M1r, M2r;
+    // Input sensor
+    eSensor mSensor;
 
-    std::mutex mImMutex;
-    std::mutex coderMutex;
+    // ORB vocabulary used for place recognition and feature matching.
+    ORBVocabulary* mpVocabulary;
 
-    int listen_fd;
+    // KeyFrame database for place recognition (relocalization and loop detection).
+    KeyFrameDatabase* mpKeyFrameDatabase;
+
+    // Map structure that stores the pointers to all KeyFrames and MapPoints.
+    Map* mpMap;
+
+    // Tracker. It receives a frame and computes the associated camera pose.
+    // It also decides when to insert a new keyframe, create some new MapPoints and
+    // performs relocalization if tracking fails.
+    Tracking* mpTracker;
+
+    // Local Mapper. It manages the local map and performs local bundle adjustment.
+    LocalMapping* mpLocalMapper;
+
+    // Loop Closer. It searches loops with every new keyframe. If there is a loop it performs
+    // a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
+    LoopClosing* mpLoopCloser;
+
+    // The viewer draws the map and the current camera pose. It uses Pangolin.
+    Viewer* mpViewer;
+
+    FrameDrawer* mpFrameDrawer;
+    MapDrawer* mpMapDrawer;
+
+    // System threads: Local Mapping, Loop Closing, Viewer.
+    // The Tracking thread "lives" in the main execution thread that creates the System object.
+    std::thread* mptLocalMapping;
+    std::thread* mptLoopClosing;
+    std::thread* mptViewer;
+
+    // Reset flag
+    std::mutex mMutexReset;
+    bool mbReset;
+
+    // Change mode flags
+    std::mutex mMutexMode;
+    bool mbActivateLocalizationMode;
+    bool mbDeactivateLocalizationMode;
+
+    // Tracking state
+    int mTrackingState;
+    std::vector<MapPoint*> mTrackedMapPoints;
+    std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
+    std::mutex mMutexState;
+
+    bool has_fused = false;
 };
 
-/*struct params
-{
-    //camera_param
-    float fx;
-    float fy;
-    float cx;
-    float cy;
-    int imgWidth;
-	int imgHeight;
+}// namespace ORB_SLAM
 
-    //     |fx  0   cx|
-    // K = |0   fy  cy|
-    //     |0   0   1 |
-    cv::Mat K = cv::Mat::eye(3, 3, CV_32F);
-
-    // 图像矫正系数
-    // [k1 k2 p1 p2 k3]
-    cv::Mat DistCoef(4, 1, CV_32F);
-    float mbf;
-
-    int debug = 1;
-    // 每一帧提取的特征点数 1000
-    int nFeatures ;
-    // 图像建立金字塔时的变化尺度 1.2
-    float fScaleFactor;
-    // 尺度金字塔的层数 8
-    int nLevels;
-    // 提取fast特征点的默认阈值 20
-    int fIniThFAST;
-    // 如果默认阈值提取不出足够fast特征点，则使用最小阈值 8
-    int fMinThFAST;
-
-    // tracking过程都会用到mpORBextractorLeft作为特征点提取器
-    bool bVocLoad ;// chose loading method based on file extension
-    string dictPath;
-}*/
+#endif // SYSTEM_H

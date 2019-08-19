@@ -7,37 +7,37 @@
 IfDebug: 1
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 381.36
-Camera.fy: 381.36
-Camera.cx: 320
-Camera.cy: 240
+Camera.fx: 762.72
+Camera.fy: 762.72
+Camera.cx: 640
+Camera.cy: 360
 
 Camera.k1: 0.0
 Camera.k2: 0.0
 Camera.p1: 0.0
 Camera.p2: 0.0
 
-Camera.width: 640
-Camera.height: 480
+Camera.width: 1280
+Camera.height: 720
 
 # Camera frames per second 
-Camera.fps: 15.0
+Camera.fps: 20.0
 
 # stereo baseline times fx
-Camera.bf:  26.6952
+Camera.bf: 53.3904
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
 # Close/Far threshold. Baseline times.
-ThDepth: 100
+ThDepth: 35
 
 #--------------------------------------------------------------------------------------------
 # Stereo Rectification. Only if you need to pre-rectify the images.
 # Camera.fx, .fy, etc must be the same as in LEFT.P
 #--------------------------------------------------------------------------------------------
-LEFT.height: 480
-LEFT.width: 640
+LEFT.height: 720
+LEFT.width: 1280
 LEFT.D: !!opencv-matrix
    rows: 1
    cols: 5
@@ -47,7 +47,7 @@ LEFT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [381.36, 0.0, 320, 0.0, 381.36, 240, 0.0, 0.0, 1.0]
+   data: [762.72, 0.0, 640.0828882065675, 0.0, 762.72, 360.3515546907214, 0.0, 0.0, 1.0]
 LEFT.R:  !!opencv-matrix
    rows: 3
    cols: 3
@@ -57,7 +57,7 @@ LEFT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [381.36, 0.0, 320, 0.0, 0.0, 381.36, 240, 0.0, 0.0, 0.0, 1.0, 0.0]
+   data: [762.72, 0.0, 640, 0.0, 0.0, 762.72, 360, 0.0, 0.0, 0.0, 1.0, 0.0]
 
 RIGHT.height: 720
 RIGHT.width: 1280
@@ -70,7 +70,7 @@ RIGHT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [381.36, 0.0, 320, 0.0, 381.36, 240, 0.0, 0.0, 1.0]
+   data: [762.72, 0.0, 640, 0.0, 762.72, 360, 0.0, 0.0, 1.0]
 RIGHT.R:  !!opencv-matrix
    rows: 3
    cols: 3
@@ -80,7 +80,7 @@ RIGHT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [381.36, 0.0, 320, -26.6952, 0.0, 381.36, 240, 0.0, 0.0, 0.0, 1.0, 0.0]
+   data: [762.721, 0.0, 640, -53.3904, 0.0, 762.72, 360, 0.0, 0.0, 0.0, 1.0, 0.0]
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters

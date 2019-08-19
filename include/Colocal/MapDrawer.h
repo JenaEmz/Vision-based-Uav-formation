@@ -18,19 +18,47 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef MAPDRAWER_H
+#define MAPDRAWER_H
 
-#ifndef ORBVOCABULARY_H
-#define ORBVOCABULARY_H
+#include"Map.h"
+#include"MapPoint.h"
+#include"KeyFrame.h"
+#include<pangolin/pangolin.h>
 
-#include"Thirdparty/DBoW2/DBoW2/FORB.h"
-#include"Thirdparty/DBoW2/DBoW2/TemplatedVocabulary.h"
+#include<mutex>
 
 namespace ORB_SLAM2
 {
 
-typedef DBoW2::TemplatedVocabulary<DBoW2::FORB::TDescriptor, DBoW2::FORB>
-  ORBVocabulary;
+class MapDrawer
+{
+public:
+    MapDrawer(Map* pMap, const cv::FileStorage &fsSettings);
+
+    Map* mpMap;
+
+    void DrawMapPoints();
+    void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
+    void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
+    void SetCurrentCameraPose(const cv::Mat &Tcw);
+    void SetReferenceKeyFrame(KeyFrame *pKF);
+    void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
+
+private:
+
+    float mKeyFrameSize;
+    float mKeyFrameLineWidth;
+    float mGraphLineWidth;
+    float mPointSize;
+    float mCameraSize;
+    float mCameraLineWidth;
+
+    cv::Mat mCameraPose;
+
+    std::mutex mMutexCamera;
+};
 
 } //namespace ORB_SLAM
 
-#endif // ORBVOCABULARY_H
+#endif // MAPDRAWER_H

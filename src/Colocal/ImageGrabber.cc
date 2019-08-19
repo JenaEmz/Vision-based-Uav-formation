@@ -1,6 +1,6 @@
 #include "ImageGrabber.h"
  
-  ImageGrabber::ImageGrabber(CoLocalSystem *coLocal,const cv::FileStorage& fsSettings) : mcoLocal(coLocal) 
+  ImageGrabber::ImageGrabber(System *coLocal,const cv::FileStorage& fsSettings) : mcoLocal(coLocal) 
  {
     cv::Mat K_l, K_r, P_l, P_r, R_l, R_r, D_l, D_r;
     fsSettings["LEFT.K"] >> K_l;

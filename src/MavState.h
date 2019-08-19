@@ -14,6 +14,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <mavros_msgs/State.h>
 
 #include "feature.h"
@@ -32,17 +33,18 @@ class MavNavigator;
 class MavState
 {
 public:
-  MavState(const string& name, MavControlLoop *controller);
+  MavState(const string &name, MavControlLoop *controller);
   ~MavState();
 
   double get_pos(int axis); //x=0,z=2
   double get_yaw();
   double get_pos_sp(int axis);
   double get_yaw_sp();
+  double get_groundtruth(int axis);
   void set_yaw_sp(double yaw);
   void set_pos_sp(double x, double y, double z);
   void set_vel_sp(double vx, double vy, double vz);
-  void get_Quaternion(Eigen::Quaterniond& q);
+  void get_Quaternion(Eigen::Quaterniond &q);
   void set_control_mode(ControlType ctr_type)
   {
     ctr_type_ = ctr_type;
@@ -62,35 +64,34 @@ public:
   string name_;
   bool has_colocal_inited;
   mutex pos_mutex_;
-  
+
   friend class MavNavigator;
-  void SetBias(double x,double y,double z);
+  void SetBias(double x, double y, double z);
+
 private:
   bool MavOk = false;
   MavControlLoop *controller_;
   mavros_msgs::State current_state_;
 
   ros::NodeHandle nh_;
-  ros::Subscriber state_sub_, local_pose_sub_, vel_sub_;
-  
-  
+  ros::Subscriber state_sub_, local_pose_sub_, vel_sub_, ground_truth_sub_;
+
   mutex vel_setpoint_mutex_;
   mutex pos_setpoint_mutex_;
   ControlType ctr_type_ = NOT_CONTROL;
 
   Eigen::Vector3d target_pos_, target_vel_;
   double target_yaw = 0;
-  Eigen::Vector3d mav_pos, mav_vel, mav_euler;
+  Eigen::Vector3d mav_pos, mav_vel, mav_euler,groundtruth;
   Eigen::Vector3d bias;
   double bias_yaw = 0;
   matrix::Quatf mav_q;
   double mav_yaw;
 
-  
-
   void MavStateCallback(const mavros_msgs::State::ConstPtr &msg);
   void MavPoseCallback(const geometry_msgs::PoseStamped &msg);
   void MavVelCallback(const geometry_msgs::TwistStamped &msg);
+  void GroundTruthCallback(const geometry_msgs::PoseStamped &msg);
 
   /*
   Eigen::Vector3d Pub_PosSp();

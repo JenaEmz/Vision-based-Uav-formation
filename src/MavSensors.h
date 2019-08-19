@@ -31,8 +31,10 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include "MavState.h"
+#include "util.hpp"
 class MavState;
 using namespace std;
+using namespace ORB_SLAM2;
 typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     
 class MavSensors
@@ -44,7 +46,8 @@ public:
     void RecordImgOnce();
     double getYaw(const geometry_msgs::Quaternion &msg);
     void GetStereoImage(cv::Mat& left,cv::Mat& Right);
-    
+    void GetPubOrbslam(cv::Mat &left, cv::Mat &Right);
+    System *orb_local;
 
 private:
     string name_;
@@ -61,6 +64,11 @@ private:
     ros::Subscriber vo2computer_sub_;
     ros::Subscriber stereo_img_sub_;
     ros::Publisher computer2mav_pub_;
+
+    
+    ros::Publisher orb_pub_;
+    ros::Publisher exvision_pub_;
+    int frame_id = 0;
     geometry_msgs::PoseWithCovarianceStamped svo_position_;
     ros::Time last_svo_estimate_;
     geometry_msgs::PoseStamped svo_init_pos_;

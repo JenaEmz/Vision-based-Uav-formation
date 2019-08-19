@@ -14,15 +14,15 @@
 #include "features.h"
 
 #include "CoLocalSystem.h"
-
+using namespace ORB_SLAM2;
 class ImageGrabber
 {
   public:
-    ImageGrabber(CoLocalSystem *coLocal) : mcoLocal(coLocal) {}
-    ImageGrabber(CoLocalSystem *coLocal,const cv::FileStorage& fsSettings);
+    ImageGrabber(System *coLocal) : mcoLocal(coLocal) {}
+    ImageGrabber(System *coLocal,const cv::FileStorage& fsSettings);
     void OpencvStereo(cv::Mat &Left, cv::Mat &Right);          //自己的
     cv::Mat OpencvStereo_Other(cv::Mat &Left, cv::Mat &Right); //第二架的
     void RosStereo(const sensor_msgs::ImageConstPtr &msgLeft, const sensor_msgs::ImageConstPtr &msgRight);
-    CoLocalSystem *mcoLocal;
+    System *mcoLocal;
     cv::Mat M1l, M2l, M1r, M2r;
 };

@@ -45,12 +45,10 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 
 
 	mAngleBinSize = 360.0 / mAngleBins;
-
 	// INTRA CODING
 	mFreqIntraRes.resize(2);
 	mFreqIntraRes[0] = (int)max(1, (int)round( mModel.p0_intra_ * (double)AC_PRECISION ) );
 	mFreqIntraRes[1] = AC_PRECISION - mFreqIntraRes[0];
-
 
 
 
@@ -91,7 +89,6 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 	mnAngleOffset = mModel.mAngleBins-1;
 	mnOctaveOffset =  mModel.mOctaves-1;
 
-
 	// Intra bow propabilities
 	size_t voc_size = voc.size();
 	mFreqIntraBow.resize(voc_size);
@@ -100,7 +97,6 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 		const double prob = 1.0 / voc_size;
 		mFreqIntraBow[i] = (int)max(1, (int)round( prob * (double)AC_PRECISION ) );
 	}
-
 
 	// Intra keypoint propabilities
 	mFreqIntraPosX.resize(mModel.mOctaves);
@@ -140,7 +136,6 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 		mFreqInterOctaveDiff[d] = (int)max(1, (int)round( prob * (double)AC_PRECISION ) );
 	}
 
-
 	// Inter coding propabilities
 	mFreqInterKeyPoint.resize(mModel.mOctaves);
 	mPInterKeyPoint.resize(mModel.mOctaves);
@@ -176,7 +171,6 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 		mFreqStereoPosY[d] = cv::Mat(1, 5, CV_32S, cv::Scalar::all(1));
 	}
 
-
 	mvSearchRangeStereoPyramid.resize(mModel.mOctaves);
 	mvSearchRangeStereoPyramid[0] = mModel.mSearchRangeStereoX;
 	mSearchRangeStereoY = mModel.mSearchRangeStereoY;
@@ -205,8 +199,6 @@ FeatureCoder::FeatureCoder(ORBVocabulary &voc, CodingStats &model, int imWidth, 
 		mLutRIntra[d] =  -((float)(256-d)) * log2(mModel.p0_intra_) - ((float) d) * log2(1.0 - mModel.p0_intra_);
 		mLutRInter[d] =  -((float)(256-d)) * log2(mModel.p0_inter_) - ((float) d) * log2(1.0 - mModel.p0_inter_);
 	}
-
-
 
 	// Prepare coder
 	mCurrentImageId = 0;

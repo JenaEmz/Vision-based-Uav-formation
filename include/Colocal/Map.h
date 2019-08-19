@@ -1,22 +1,122 @@
-#pragma once
+/**
+* This file is part of ORB-SLAM2.
+*
+* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
+* For more information see <https://github.com/raulmur/ORB_SLAM2>
+*
+* ORB-SLAM2 is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* ORB-SLAM2 is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MAP_H
+#define MAP_H
 
 #include "MapPoint.h"
-#include "Frame.h"
-
+#include "KeyFrame.h"
 #include <set>
-class Frame;
-class MapPoint;
 
-class Map{
+#include <mutex>
+
+
+
+namespace ORB_SLAM2
+{
+
+class MapPoint;
+class KeyFrame;
+
+struct trajPoint
+{
+    double x,y,z;
+    int agent_id =65;
+    trajPoint()
+    {
+
+    }
+    trajPoint(double x,double y ,double z,int agent_i):x(x),y(y),z(z)
+    {
+        agent_id = agent_i;
+    }
+};
+struct communiLine
+{
+    double x1,y1,z1,x2,y2,z2;
+    int a1,a2;
+    communiLine()
+    {
+
+    }
+    communiLine(double x1,double y1 ,double z1,int a1,double x2,double y2,double z2,int a2):x1(x1),y1(y1),z1(z1),x2(x2),y2(y2),z2(z2),a1(a1),a2(a2)
+    {
+        
+    }
+};
+class Map
+{
 public:
     Map();
-    void AddFrame(Frame* pF);
-    void AddMapPoint(MapPoint* pMP);
-    void EraseMapPoint(MapPoint* pMP);
-    void EraseFrame(Frame* pF);
 
-    std::set<MapPoint*> mspMapPoints; ///< MapPoints
-    std::set<Frame*> mspFrames; ///< Frames
+    void AddKeyFrame(KeyFrame* pKF);
+    void AddMapPoint(MapPoint* pMP);
+    void AddTrajPoint(trajPoint* pMP);
+    void AddCommLine(communiLine* pMP);
+    void EraseMapPoint(MapPoint* pMP);
+    void EraseKeyFrame(KeyFrame* pKF);
+    void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
+    void InformNewBigChange();
+    int GetLastBigChangeIdx();
+
+    std::vector<KeyFrame*> GetAllKeyFrames();
+    std::vector<MapPoint*> GetAllMapPoints();
+    std::vector<MapPoint*> GetReferenceMapPoints();
+
+    std::vector<trajPoint*> GetTrajectoryPoints();
+    std::vector<communiLine*> GetCommLine();
+
+    long unsigned int MapPointsInMap();
+    long unsigned  KeyFramesInMap();
+
+    long unsigned int GetMaxKFid();
+
+    void clear();
+
+    vector<KeyFrame*> mvpKeyFrameOrigins;
+
+    std::mutex mMutexMapUpdate;
+
+    // This avoid that two points are created simultaneously in separate threads (id conflict)
+    std::mutex mMutexPointCreation;
+
+protected:
+    std::set<MapPoint*> mspMapPoints;
+    std::set<KeyFrame*> mspKeyFrames;
+
+    std::vector<MapPoint*> mvpReferenceMapPoints;
+
+    std::vector<trajPoint*> mvpTrajectoryPoints;
+
+    std::vector<communiLine*> mvpCommLines;
 
     long unsigned int mnMaxKFid;
+
+    // Index related to a big change in the map (loop closure, global BA)
+    int mnBigChangeIdx;
+
+    std::mutex mMutexMap;
+    std::mutex mMutexTraj;
+    std::mutex mMutexComm;
 };
+
+} //namespace ORB_SLAM
+
+#endif // MAP_H

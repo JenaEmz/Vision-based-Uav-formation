@@ -10,9 +10,10 @@
   <param name="config_file_location" value="$(arg config_file_location)"/>
   <param name="name" value="1"/>
   </node>
-  <node pkg="px4_csq" type="px4_csq_node" name="px4_csq2" output="screen">
+<node pkg="px4_csq" type="px4_csq_node" name="px4_csq2" output="screen">
   <param name="config_file_location" value="$(arg config_file_location)"/>
   <param name="name" value="2"/>
   </node>
+
 <arg name="frame" default="/world"/>
 </launch>

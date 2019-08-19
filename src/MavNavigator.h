@@ -13,7 +13,10 @@
 #include "MavSensors.h"
 
 #include "frame_ros.h"
+#include "util.hpp"
+#include "DataRecorder.h"
 
+using namespace ORB_SLAM2;
 class MavState;
 class MavSensors;
 class MavNavigator
@@ -38,11 +41,20 @@ class MavNavigator
 
     void FormationCallback(const px4_csq::colocal_request &msg);
 
+    //date record thread
+    void DrawTrajThread(void);
+    void RecordThread(void);
+
+    void pos1Callback(const nav_msgs::Odometry &msg);
+    void pos2Callback(const nav_msgs::Odometry &msg);
+    void pos3Callback(const nav_msgs::Odometry &msg);
+
     ros::NodeHandle nh_;
     ros::Subscriber request_sub;
     ros::Publisher request_pub;
     ros::Subscriber self_respons_sub;
     //vector<ros::Subscriber> other_pose_subs;
+    ros::Subscriber other_pos_sub[3];
     vector<ros::Publisher> other_respons_pubs;
     //vector<px4_csq::pose_with_state> other_states;
     bool Extractor_init = false;
@@ -55,19 +67,29 @@ class MavNavigator
     ros::Subscriber formation_target_sub;
     double formation_yaw = 0;
     Eigen::Vector3d formation_pos;
+    Eigen::Vector3d last_colocal_pos[3];
+
+    Eigen::Vector3d last_record_pos[3];
+    Eigen::Vector3d record_pos[3];
+    bool has_communication[3];
+    thread draw_thread_;
   private:
     MavState *state_;
     MavSensors *sensors_;
     cv::FileStorage fsSettings_;
-    CoLocalSystem *coLocal;
-    CoLocalSystem *coLocal2;
+    System *coLocal;
+    System *coLocal2;
     int communication_interval = 2;
     double old_update_bias_time = 0;
     long last_colocal_time = 0;
     long current_colocal_time = 0;
-    double colocal_interval = 2;
+    double colocal_interval = 4;
     double colocal_interval_offset = 0;
     std::normal_distribution<> colocal_time_norm{0,0.15};
+
+    bool record_start = false;
+    int trans_data_raw = 0;
+    int trans_data = 0;
 };
 
 inline double Distance(double x1, double y1, double x2, double y2)

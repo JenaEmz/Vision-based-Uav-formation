@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV REQUIRED COMPONENTS)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem system thread program_options)
+find_package(Pangolin REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -48,7 +49,8 @@ find_package(Boost REQUIRED COMPONENTS filesystem system thread program_options)
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
+##   * add "message_runtime" and every package in MSG_DEP_Serror adding symbols: DSO missing from command line
+#ET to
 ##     catkin_package(CATKIN_DEPENDS ...)
 ##   * uncomment the add_*_files sections below as needed
 ##     and list every .msg/.srv/.action file to be processed
@@ -146,6 +148,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/include/Colocal
+${Pangolin_INCLUDE_DIRS}
 )
 
 aux_source_directory("./src/Colocal" DIR_SRCS)
@@ -161,6 +164,7 @@ target_link_libraries(coder ${Boost_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(colocal
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+${Pangolin_LIBRARIES}
   ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
   ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
   coder
@@ -173,6 +177,7 @@ add_library(Mav_px4
 	src/MavPX4.cpp
 	src/MavSensors.cpp
 	src/MavState.cpp
+	src/DataRecorder.cpp
 )
 
 target_link_libraries(Mav_px4

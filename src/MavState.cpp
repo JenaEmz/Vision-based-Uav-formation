@@ -25,8 +25,10 @@ void MavState::MavStateCallback(const mavros_msgs::State::ConstPtr &msg)
 
 void MavState::SetBias(double x,double y,double z)
 {
-    bias(0)+= x - mav_pos(0);
-    bias(1)+= y - mav_pos(1);
+    //bias(0)+= x - mav_pos(0);
+    //bias(1)+= y - mav_pos(1);
+    bias(0) = x;
+    bias(1) = y;
     has_colocal_inited = true;
 }
 
@@ -72,7 +74,16 @@ void MavState::MavVelCallback(const geometry_msgs::TwistStamped &msg)
     mav_vel(1) = msg.twist.linear.y;
     mav_vel(2) = msg.twist.linear.z;
 }
-
+void MavState::GroundTruthCallback(const geometry_msgs::PoseStamped &msg)
+{
+    groundtruth(0) = msg.pose.position.x;
+    groundtruth(1) = msg.pose.position.y;
+    groundtruth(2) = msg.pose.position.z;
+}
+double MavState::get_groundtruth(int axis)
+{
+    return groundtruth(axis);
+}
 double MavState::get_pos(int axis)
 {
     return mav_pos(axis);

@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
     string uav_name;
     private_nh.param("name", uav_name, std::string(""));
-    CoLocalSystem coLocal(fsSettings);
+    System coLocal(fsSettings,false);
 
     std::string pic_path;
     private_nh.param("pic_file_location", pic_path,std::string(""));
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     cv::Mat right0(cv::imread(pic_path+"/right0.jpg", 0));
 
     //测试 压缩和解压特征点
-    std::vector<uchar> bitstream;
+    /*std::vector<uchar> bitstream;
     //coLocal.GenerateFeatureBitstream(left0,right0,bitstream);
 
     cv::Mat left1(cv::imread(pic_path+"/left3.jpg", 0));
