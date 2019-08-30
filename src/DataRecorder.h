@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <cstring>
 #include <fcntl.h>
+#include <dirent.h>
+
+#include <sys/stat.h> 
 //#include <nav_msgs/Odometry.h>
 
 using namespace std;
@@ -17,7 +20,7 @@ private:
     
 public:
     int m_file_fd;
-    DataRecorder(int id,string name);
+    DataRecorder(const char* head,const char* path);
     DataRecorder(void);
     void Record(char data[],int size);
     ~DataRecorder();

@@ -35,7 +35,6 @@ float Frame::mfGridElementWidthInv, Frame::mfGridElementHeightInv;
 Frame::Frame()
 {
 }
-
 //Copy Constructor
 Frame::Frame(const Frame &frame)
     : mpORBvocabulary(frame.mpORBvocabulary), mpORBextractorLeft(frame.mpORBextractorLeft), mpORBextractorRight(frame.mpORBextractorRight),

@@ -71,7 +71,7 @@ public:
         unique_lock<std::mutex> lock(mMutexNewKFs);
         return mlNewKeyFrames.size();
     }
-
+    void EmergenceBundleAdjustment(KeyFrame *pKF);
 protected:
 
     bool CheckNewKeyFrames();
@@ -98,6 +98,8 @@ protected:
     bool mbFinishRequested;
     bool mbFinished;
     std::mutex mMutexFinish;
+
+    std::mutex mMutexRelKeyframe;
 
     Map* mpMap;
 

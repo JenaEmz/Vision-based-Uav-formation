@@ -101,11 +101,13 @@ cv::Mat System::TrackFromBitstream(cv::Mat &init, cv::Mat &imLeft, cv::Mat &imRi
     cv::Mat Tcw = mpTracker->RegenerateRefFrame(init,keyPointsLeft, descriptorLeft, keyPointsRight, descriptorRight, mvuRight, mvDepth, insert_key,msg_id);
     return Tcw;
 }
-void System::GenerateBitstream(cv::Mat &imLeft,cv::Mat &imRight, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size)
+//void System::GenerateBitstream(cv::Mat &Tcw, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size)
+void System::GenerateBitstream(cv::Mat &imLeft,cv::Mat imRight, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size)
 {
     std::vector<cv::KeyPoint> keypointsLeft, keypointsRight;
     cv::Mat descriptorsLeft, descriptorsRight;
     key_size = keypointsLeft.size();
+    //mpTracker->GenerateBitFrame(Tcw,keypointsLeft,  keypointsRight, descriptorsLeft,descriptorsRight);
     mpTracker->GenerateBitFrame(imLeft,imRight,keypointsLeft,  keypointsRight, descriptorsLeft,descriptorsRight);
     mvuRight = mpTracker->bitframe.mvuRight;
     mvDepth = mpTracker->bitframe.mvDepth;

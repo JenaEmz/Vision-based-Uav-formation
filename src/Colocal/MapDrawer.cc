@@ -143,7 +143,7 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
     }
     glEnd();
     glBegin(GL_POINTS);
-    glColor3f(0.5,1.0,0.0);
+    glColor3f(1.,0.0,1.0);
     for(int i = 0 ;i<agent_0.size();i++ )
     {
         trajPoint* ptr = agent_0[i];
@@ -158,7 +158,7 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
         glVertex3f(-ptr->y,-ptr->z,ptr->x);
     }
     glEnd();
-    /*const vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    const vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
 
     if(bDrawKF)
     {
@@ -205,7 +205,7 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
             glPopMatrix();
         }
     }
-    
+    /*
     if(bDrawGraph)
     {
         glLineWidth(mGraphLineWidth);

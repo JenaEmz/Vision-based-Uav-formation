@@ -36,7 +36,7 @@ private:
 
     double yaw_P_ = 1.3;
     Eigen::Matrix3d pos_P_;
-
+    int times = 0;
 };
 double constraind(double val, double min, double max);
 void ConstrainVector(Eigen::Vector3d& target, double max_xy, double max_z);

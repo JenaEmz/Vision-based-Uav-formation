@@ -52,6 +52,8 @@ void LocalMapping::Run()
     while(1)
     {
         // Tracking will see that Local Mapping is busy
+
+        mMutexRelKeyframe.lock();
         SetAcceptKeyFrames(false);
 
         // Check if there are keyframes in the queue
@@ -81,6 +83,7 @@ void LocalMapping::Run()
                 {
                     //printf("BA\n");
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpMap);
+                    
                 }
 
                 // Check redundant local Keyframes
@@ -88,6 +91,7 @@ void LocalMapping::Run()
             }
 
             mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            
         }
         else if(Stop())
         {
@@ -107,11 +111,22 @@ void LocalMapping::Run()
 
         if(CheckFinish())
             break;
-
+        mMutexRelKeyframe.unlock();
         usleep(3000);
     }
 
     SetFinish();
+}
+void LocalMapping::EmergenceBundleAdjustment(KeyFrame *pKF)
+{
+    mMutexRelKeyframe.lock();
+    mbAbortBA = false;
+    pKF->UpdateConnections();
+    pKF->ComputeBoW();
+    SetAcceptKeyFrames(false);
+    Optimizer::LocalBundleAdjustment(pKF,&mbAbortBA, mpMap);
+    SetAcceptKeyFrames(true);
+    mMutexRelKeyframe.unlock();
 }
 
 void LocalMapping::InsertKeyFrame(KeyFrame *pKF)

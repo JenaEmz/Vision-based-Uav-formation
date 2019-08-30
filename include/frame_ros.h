@@ -36,8 +36,10 @@ struct frame_ros_
     , nrobotid(0)
     , data()
     , mDepth()
-    , mvuRight()  {
-    }
+    , mvuRight()
+    , Twc()  {
+      Twc.assign(0.0);
+  }
   frame_ros_(const ContainerAllocator& _alloc)
     : header(_alloc)
     , x(0.0)
@@ -50,9 +52,11 @@ struct frame_ros_
     , nrobotid(0)
     , data(_alloc)
     , mDepth(_alloc)
-    , mvuRight(_alloc)  {
+    , mvuRight(_alloc)
+    , Twc()  {
   (void)_alloc;
-    }
+      Twc.assign(0.0);
+  }
 
 
 
@@ -91,6 +95,9 @@ struct frame_ros_
 
    typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _mvuRight_type;
   _mvuRight_type mvuRight;
+
+   typedef boost::array<float, 16>  _Twc_type;
+  _Twc_type Twc;
 
 
 
@@ -170,12 +177,12 @@ struct MD5Sum< ::px4_csq::frame_ros_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "6fa8ffce8c665540351073d063d8deef";
+    return "bf2542c63c14c7fc4d309c2fb1c839e0";
   }
 
   static const char* value(const ::px4_csq::frame_ros_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x6fa8ffce8c665540ULL;
-  static const uint64_t static_value2 = 0x351073d063d8deefULL;
+  static const uint64_t static_value1 = 0xbf2542c63c14c7fcULL;
+  static const uint64_t static_value2 = 0x4d309c2fb1c839e0ULL;
 };
 
 template<class ContainerAllocator>
@@ -206,6 +213,7 @@ int16 nrobotid\n\
 byte[] data\n\
 float32[] mDepth\n\
 float32[] mvuRight\n\
+float32[16] Twc\n\
 \n\
 ================================================================================\n\
 MSG: std_msgs/Header\n\
@@ -254,6 +262,7 @@ namespace serialization
       stream.next(m.data);
       stream.next(m.mDepth);
       stream.next(m.mvuRight);
+      stream.next(m.Twc);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -308,6 +317,12 @@ struct Printer< ::px4_csq::frame_ros_<ContainerAllocator> >
     {
       s << indent << "  mvuRight[" << i << "]: ";
       Printer<float>::stream(s, indent + "  ", v.mvuRight[i]);
+    }
+    s << indent << "Twc[]" << std::endl;
+    for (size_t i = 0; i < v.Twc.size(); ++i)
+    {
+      s << indent << "  Twc[" << i << "]: ";
+      Printer<float>::stream(s, indent + "  ", v.Twc[i]);
     }
   }
 };

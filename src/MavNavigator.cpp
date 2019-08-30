@@ -4,7 +4,7 @@ MavNavigator::MavNavigator(MavState *state, MavSensors *sensors, const string &c
 {
     
     fsSettings_ = cv::FileStorage(config_path, cv::FileStorage::READ);
-    if(state_->self_id == 1)
+    if(state_->self_id == 0)
     {
         coLocal = new System(fsSettings_,true);
     }
@@ -32,15 +32,40 @@ MavNavigator::MavNavigator(MavState *state, MavSensors *sensors, const string &c
         other_respons_pubs.emplace_back(nh_.advertise<px4_csq::frame_ros>(bitstreamTopic, 1000, true));
     }
     formation_pos << 0,0,0;
-    
+
+    char timeinfo[256] ={0};
+    char timeinfo2[256] ={0};
+    time_t nowtime = time(NULL);
+    struct tm *p;
+    p = gmtime(&nowtime);
+
+    sprintf(timeinfo,"/home/jena/csq_ws/logs/%d_%d_%d_%d_%02d_/",1900+p->tm_year,1+p->tm_mon,p->tm_mday,8+p->tm_hour,p->tm_min);
+    sprintf(timeinfo2,"%d_%02d_",8+p->tm_hour,p->tm_min);
+    string dir_name = string(timeinfo);
+    mkdir(dir_name.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+    string file_name = dir_name+string(timeinfo2)+"uav"+to_string(state_->self_id)+"_.txt";
+    char head[] = "timestamp\tinit_state\tx\ty\tz\ttrans_data\ttrans_data_raw\tgroundtruth_x\tgroundtruth_y\tgroundtruth_z\n";
+
+    recorder = new DataRecorder(head,file_name.c_str());
     draw_thread_ = std::thread(&MavNavigator::DrawTrajThread,this);
+    record_thread_ = std::thread(&MavNavigator::RecordThread,this);
+    if(state_->self_id == 0)
+    {
+        string gs_name = dir_name+ string(timeinfo2)+"gs.txt";
+        char head[] = "timestamp\tg0x\tg0y\tg0z\tg1x\tg1y\tg1z\tg2x\tg2y\tg2z\n";
+        gs_recorder =  new DataRecorder(head,gs_name.c_str());
+        record_gs_thread_ = std::thread(&MavNavigator::RecordGsThread,this);
+    }
+    last_comm_pos<<0,0,0;
+    printf("nav init\n");
 }
 
 MavNavigator::~MavNavigator()
 {
 }
 
-void MavNavigator::Takeoff(double x, double y, double height = 4)
+void MavNavigator::Takeoff(double x, double y, double height = 2)
 {
     state_->set_pos_sp(x, y, height);
     state_->set_control_mode(NORMAL_POSITION);
@@ -78,9 +103,8 @@ bool MavNavigator::Mission(MissionPoint &Mission)
             Mission.y = state_->get_pos(1);
             Mission.start = true;
         }
-        Takeoff(Mission.x, Mission.y, 3);
-        record_start = true;
-        if (state_->get_pos(2) > (3 - 0.05))
+        Takeoff(Mission.x, Mission.y, 2);
+        if (state_->get_pos(2) > (2 - 0.05))
             return true;
         else
             return false;
@@ -106,23 +130,39 @@ bool MavNavigator::Mission(MissionPoint &Mission)
             return false;
         break;
     case FORMATE:
+
+        record_start = true;
         if(state_->has_colocal_inited)
         {
             MoveTo(formation_pos(0), formation_pos(1), formation_pos(2),formation_yaw);
             
+            float dist_x = last_comm_pos(0)-state_->slam_pos(0);
+            float dist_y = last_comm_pos(1)-state_->slam_pos(1);
+            if((dist_x*dist_x+dist_y*dist_y)>1)
+            {
+                need_new_colocal = false;
+            }
+
             struct timeval cur_time;
             gettimeofday(&cur_time, NULL);
             current_colocal_time = cur_time.tv_sec*1000000 + cur_time.tv_usec;
-            if((current_colocal_time - last_colocal_time)>1000000*(colocal_interval+colocal_interval_offset))
+            if((current_colocal_time - last_colocal_time)>1000000*(colocal_interval)||need_new_colocal)
             {
-                
-                UpdateBias();
+                need_new_colocal = true;
+            }
+            if(need_new_colocal)
+            {
+                need_new_colocal = false;
+                //UpdateBias();
                 last_colocal_time = current_colocal_time;
                 std::random_device rd;
                 std::default_random_engine rng {rd()};
                 colocal_interval_offset = colocal_time_norm(rng);
                 if(colocal_interval_offset<-1)colocal_interval_offset = -1;
                 else if(colocal_interval_offset>1)colocal_interval_offset=1;
+
+                last_comm_pos(0) = state_->slam_pos(0);
+                last_comm_pos(1) = state_->slam_pos(1);
             }
         }
         else
@@ -156,6 +196,15 @@ bool MavNavigator::Mission(MissionPoint &Mission)
 
 void MavNavigator::UpdateBias()
 {
+    /*if(state_->self_id == 1)
+    {
+        state_->SetBias(-1, -2, 3);
+    }
+    if(state_->self_id == 2)
+    {
+        state_->SetBias(-2, 3, 3);
+    }*/
+    
     px4_csq::colocal_request msg;
     msg.has_inited = state_->has_colocal_inited;
     msg.x = state_->mav_pos(0);
@@ -199,7 +248,12 @@ void MavNavigator::RequestCallback(const px4_csq::colocal_request &msg)
 {
     if (msg.id == state_->self_id || state_->has_colocal_inited == false)
         return;
-    if ( state_->self_id == 0 ||state_->self_id == 2)
+    if(msg.has_inited==true)
+    {
+        int chuan =rand()%5;
+        if(chuan>3)return;
+    }
+    if ( state_->self_id == 0 ||state_->self_id == 0)
     {
         //std::cout << "the" << state_->self_id << "get request from " << msg.id << std::endl;
         PubRespons(msg.id);
@@ -219,10 +273,9 @@ void MavNavigator::PubRespons(int id)
     cv::Mat right, left;
     //std::cout << "Pub respons from:" << state_->self_id << std::endl;
     sensors_->GetStereoImage(left, right);
-    
     //cv::imwrite("/home/jena/csq_ws/wrong_0_0.jpg",left);
     //cv::imwrite("/home/jena/csq_ws/wrong_0_1.jpg",right);
-   
+    
     //coLocal->GenerateFeatureBitstream(1,left0,right0,bitstream);
     std::vector<uchar> bitstream;
     //coLocal->GenerateFeatureBitstream(1,left0, right0, bitstream);
@@ -238,40 +291,85 @@ void MavNavigator::PubRespons(int id)
     std::vector<float> mvuRight; 
     std::vector<float> mvDepth; 
     int raw_size =0;
-     if(!left.empty()&&!right.empty())
-    coLocal->GenerateBitstream(left, right, bitstream, mvuRight,mvDepth,raw_size );
+    cv::Mat Tcw;
+    /*if(!left.empty()&&!right.empty())
+    coLocal->GenerateBitstream(left,right, bitstream, mvuRight,mvDepth,raw_size );
+    
     else
     {
         printf("图像为空？\n");
         return;
-    }
+    }*/
+    coLocal->GenerateBitstream(left,right,bitstream, mvuRight,mvDepth,raw_size );
+    //coLocal->GenerateBitstream(Tcw,bitstream, mvuRight,mvDepth,raw_size );
+    Eigen::Vector3d new_t;
+    Eigen::Quaterniond new_q;
+    /*if(!Tcw.empty())
+    {
+        Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
+        SlamPoseTrans::SlamToLocalpose_test(Tcw,ned_q,ned_t);
+
+        Eigen::Quaterniond rot_q( 0.707 ,0, 0,0.707);
+        new_q = ned_q;
+        new_t = rot_q* ned_t;
+        /*for(int idx=0;idx<Tcw.rows;++idx)
+            for(int idy=0;idy<Tcw.cols;++idy)
+                msg.Twc[idx*Tcw.rows+idy] = Tcw.at<float>(idx,idy);*/
+   /* }
+    else
+    {
+        return;
+    }*/
+    
     //cv::imshow("0000",left);
     //cv::waitKey(1);
     //std::cout<<bitstream.size()<<" size"<<std::endl;
-    msg.x = state_->mav_pos(0);
-    msg.y = state_->mav_pos(1);
+    msg.x =state_->slam_pos(0);
+    msg.y = state_->slam_pos(1);
     msg.z = 3;//state_->mav_pos(2);
     msg.qw = state_->mav_q(0);
     msg.qx = state_->mav_q(1);
     msg.qy = state_->mav_q(2);
     msg.qz = state_->mav_q(3);
+    /*msg.x = new_t(0);
+    msg.y = new_t(1);
+    msg.z = 3;//state_->mav_pos(2);
+    msg.qw = new_q.w();
+    msg.qx = new_q.x();
+    msg.qy = new_q.y();
+    msg.qz = new_q.z();*/
     //std::cout << state_->name_ << " current pos " << msg.x << " " << msg.y << " " << msg.z << std::endl;
+    
     trans_data_raw += raw_size;
     trans_data+=bitstream.size();
     msg.data.assign(bitstream.begin(), bitstream.end());
     msg.mvuRight.assign(mvuRight.begin(), mvuRight.end());
     msg.mDepth.assign(mvDepth.begin(), mvDepth.end());
+    
     other_respons_pubs[id].publish(msg);
 }
 
 void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
 {
+    /*if(state_->self_id == 1)
+    {
+        state_->SetBias(-1,-2,3);
+    }
+    else
+    {
+        state_->SetBias(-2,3, 3);
+    }
+    return;*/
+    
     //std::cout<<img_bitstream.size()<<" size"<<std::endl;
     Eigen::Quaterniond msg_q(msg->qw,msg->qx,msg->qy,msg->qz);
     //Eigen::Quaterniond msg_q(-1,0,0,0);
     Eigen::Vector3d msg_t(msg->x,msg->y,msg->z);
     //Eigen::Vector3d msg_t(0,0,3);
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
+    /*for(int idx=0;idx<pose.rows;++idx)
+        for(int idy=0;idy<pose.cols;++idy)
+            pose.at<float>(idx,idy)=msg->Twc[idx*pose.rows+idy];*/
     /*std::cout <<"q is "<<new_q.w()<<" "<<new_q.x()<<" "<<new_q.y()<<" "<<new_q.z()<<std::endl;
     std::cout <<"t is "<<msg_t<<std::endl;
     cv::Mat pose2 = cv::Mat::eye(4, 4, CV_32F);*/
@@ -313,9 +411,9 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
     bool insert_keyframe;
     double x_dist = last_colocal_pos[msg->nrobotid](0) -state_->mav_pos(0);
     double y_dist = last_colocal_pos[msg->nrobotid](1) -state_->mav_pos(1);
-    if((x_dist*x_dist+y_dist*y_dist)<0.5)
+    if((x_dist*x_dist+y_dist*y_dist)<1)
     {
-        insert_keyframe = false;
+        insert_keyframe = true;
     }
     else
     {
@@ -324,36 +422,39 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
         last_colocal_pos[msg->nrobotid](1) = state_->mav_pos(1);
     }
     res = coLocal->TrackFromBitstream(pose,left,right,vDecKeypointsLeft,decDescriptorsLeft,vDecKeypointsRight,decDescriptorsRight,mvuRight,mvDepth,insert_keyframe,msg->nrobotid);
-    
+    std::cout << "The " << state_->self_id << " get respons from " << msg->nrobotid;
     //res = coLocal2->TrackFromImage(left0,right0,left1,right1,init_pose);
     if (!res.empty())
     {
         Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
         SlamPoseTrans::SlamToLocalpose_test(res,ned_q,ned_t);
-
-        Eigen::Quaterniond rot_q( 0.707 ,0, 0,0.707);
+        Eigen::Quaterniond rot_q( 0.70710678118655  ,0, 0, 0.70710678118655 );
         Eigen::Quaterniond new_q = (ned_q*rot_q*msg_q);
-        Eigen::Vector3d new_t = msg_t - rot_q* ned_t;
+        Eigen::Vector3d new_t = msg_t - ned_q*rot_q* ned_t;
         
-        std::cout << "The " << state_->self_id << " get respons from " << msg->nrobotid;
+        Eigen::Vector3d rel_t = rot_q* ned_t;
         has_communication[msg->nrobotid] = true;
         //std::cout<<" and local position is :"<<msg->x-ned_t(2)<<","<<msg->y+ned_t(0)<<","<<msg->z-ned_t(1)<<","<<std::endl;
-        std::cout<<" and local position is :"<<new_t(0)<<","<<new_t(1)<<","<<new_t(2)<<","<<std::endl;
-        std::cout<<" and msg position is :"<<msg_t(0)<<","<<msg_t(1)<<","<<msg_t(2)<<","<<std::endl;
-        if(state_->has_colocal_inited == false)
+        std::cout<<" and new_t is :"<<new_t(0)<<","<<new_t(1)<<","<<new_t(2)<<","<<std::endl;
+        std::cout << " and msg position is :" << msg_t(0) << "," << msg_t(1) << "," << msg_t(2) <<  std::endl;
+        std::cout << " and slam position is :" << state_->slam_pos(0)<< "," << state_->slam_pos(1)<< "," << rel_t(2) <<  std::endl;
+        std::cout << " and rel position is :" << rel_t(0)<< "," << rel_t(1)<< "," << rel_t(2) <<  std::endl;
+        //std::cout << " and rel position is :" << rel_t(0) << "," << rel_t(1) << "," << rel_t(2) << "," << std::endl;
+        if (msg->nrobotid == 0)
         {
-            //state_->SetBias(msg->x-ned_t(2),msg->y+ned_t(0),3);
-            state_->SetBias(new_t(0),new_t(1),3);
-            MoveTo(formation_pos(0), formation_pos(1), formation_pos(2),formation_yaw);
-            //state_->has_colocal_inited = true;
+            if (state_->has_colocal_inited == false)
+            {
+                //state_->SetBias(msg->x-ned_t(2),msg->y+ned_t(0),3);
+                state_->SetBias(new_t(0), new_t(1), 3);
+                MoveTo(formation_pos(0), formation_pos(1), formation_pos(2), formation_yaw);
+                //state_->has_colocal_inited = true;
+            }
+            else
+            {
+                state_->SetBias(new_t(0), new_t(1), 3);
+                std::cout << "ekf" << std::endl;
+            }
         }
-        else
-        {
-            state_->SetBias(new_t(0),new_t(1),3);
-            std::cout<<"ekf"<<std::endl;
-        }
-        
-
         /*std::cout<<msg->qw<<","<<msg->qx<<","<<msg->qy<<","<<msg->qz<<std::endl;
         std::cout<<msg->x<<","<<msg->y<<","<<msg->z<<","<<std::endl;
 
@@ -475,7 +576,6 @@ void MavNavigator::DrawTrajThread(void)
                 int j = state_->self_id;
                 has_communication[i] = false;
                 coLocal->AddComm(record_pos[i].x(),record_pos[i].y(),record_pos[i].z(),i,record_pos[j].x(),record_pos[j].y(),record_pos[j].z(),j);
-                
             }
         }
         std::this_thread::sleep_for(std::chrono::duration<double>(0.1));
@@ -490,28 +590,48 @@ void MavNavigator::RecordThread(void)
         if(record_start)
         {
             gettimeofday(&cur_time, NULL);
-            long now_time = cur_time.tv_sec*1000000 + cur_time.tv_usec;
+            long now_time = cur_time.tv_sec*1000000 + cur_time.tv_usec - 1.5e15;
             memset(&data,0,sizeof(data));
-            sprintf(data,"%ld\t%d\t%f\t%f\t%f\t%d\t%d\t,",now_time,state_->has_colocal_inited, state_->get_pos(0), state_->get_pos(1), state_->get_pos(2),trans_data_raw,trans_data);
+            sprintf(data,"%ld\t%d\t%f\t%f\t%f\t%d\t%d\t%f\t%f\t%f\n",now_time,state_->has_colocal_inited, state_->slam_pos(0), state_->slam_pos(1), state_->slam_pos(2),trans_data_raw,trans_data,record_pos[state_->self_id].x(),record_pos[state_->self_id].y(),record_pos[state_->self_id].z());
+            recorder->Record(data,0);
+        }
+        std::this_thread::sleep_for(std::chrono::duration<double>(0.2));
+    }
+}
+void MavNavigator::RecordGsThread(void)
+{
+    char data[1024] ={0};
+    struct timeval cur_time;
+    while(1)
+    {
+        if(record_start)
+        {
+            gettimeofday(&cur_time, NULL);
+            long now_time = cur_time.tv_sec*1000000 + cur_time.tv_usec - 1.5e15;
+            memset(&data,0,sizeof(data));
+            sprintf(data,"%ld\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",now_time,record_pos[0](0),record_pos[0](1),record_pos[0](2),record_pos[1](0),record_pos[1](1),record_pos[1](2),record_pos[2](0),record_pos[2](1),record_pos[2](2));
+            gs_recorder->Record(data,0);
+           // printf("rel pos of 1 and 2:%f,%f\n",(record_pos[0](0)-record_pos[2](0)),(record_pos[0](1)-record_pos[2](1)));
+           printf("pos of 0:%f,%f est pos %f,%f\n",(record_pos[0](0)),(record_pos[0](1)),state_->slam_pos(0),state_->slam_pos(1));
         }
         std::this_thread::sleep_for(std::chrono::duration<double>(0.2));
     }
 }
 void MavNavigator::pos1Callback(const nav_msgs::Odometry &msg)
 {
-    record_pos[0](0) = msg.pose.pose.position.x;
-   record_pos[0](1) =  msg.pose.pose.position.y;
-   record_pos[0](2) =  msg.pose.pose.position.z;
+    record_pos[0](0) =  msg.pose.pose.position.x;
+    record_pos[0](1) =  msg.pose.pose.position.y;
+    record_pos[0](2) =  msg.pose.pose.position.z;
 }
 void MavNavigator::pos2Callback(const nav_msgs::Odometry &msg)
 {
-   record_pos[1](0) = msg.pose.pose.position.x;
+   record_pos[1](0) =  msg.pose.pose.position.x;
    record_pos[1](1) =  msg.pose.pose.position.y;
    record_pos[1](2) =  msg.pose.pose.position.z;
 }
 void MavNavigator::pos3Callback(const nav_msgs::Odometry &msg)
 {
-    record_pos[2](0) = msg.pose.pose.position.x;
+   record_pos[2](0) =  msg.pose.pose.position.x;
    record_pos[2](1) =  msg.pose.pose.position.y;
    record_pos[2](2) =  msg.pose.pose.position.z;
 }

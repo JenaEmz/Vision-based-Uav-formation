@@ -44,8 +44,13 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     mav_pos(1) = msg.pose.position.y;
     mav_pos(2) = msg.pose.position.z;*/
     //加上偏差值
-    mav_pos(0) = msg.pose.position.x + bias(0);
+    /*mav_pos(0) = msg.pose.position.x + bias(0);
     mav_pos(1) = msg.pose.position.y + bias(1);
+    mav_pos(2) = msg.pose.position.z + bias(2);*/
+    mav_pos(0) = slam_pos(0) + bias(0);
+    mav_pos(1) = slam_pos(1) + bias(1);
+    /*mav_pos(0) = msg.pose.position.x + bias(0);
+    mav_pos(1) = msg.pose.position.y + bias(1);*/
     mav_pos(2) = msg.pose.position.z + bias(2);
     
     mav_q = matrix::Quatf(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);

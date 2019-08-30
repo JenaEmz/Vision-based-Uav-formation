@@ -79,7 +79,8 @@ public:
     cv::Mat RegenerateRefFrame(cv::Mat &init,  const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
                                const std::vector<cv::KeyPoint> &keyPointsRight, const cv::Mat &descriptorRight,
                                const std::vector<float> &mvuRight, const std::vector<float> &mvDepth, bool insert_key,int msg_id);
-void GenerateBitFrame(cv::Mat &imLeft,cv::Mat &imRight,std::vector<cv::KeyPoint>& keypointsLeft, std::vector<cv::KeyPoint>& keypointsRight,cv::Mat & descriptorsLeft, cv::Mat &descriptorsRight);
+   void GenerateBitFrame(cv::Mat &imLeft,cv::Mat& imRight,std::vector<cv::KeyPoint>& keypointsLeft, std::vector<cv::KeyPoint>& keypointsRight,cv::Mat & descriptorsLeft, cv::Mat &descriptorsRight); 
+    //void GenerateBitFrame(cv::Mat &Tcw,std::vector<cv::KeyPoint>& keypointsLeft, std::vector<cv::KeyPoint>& keypointsRight,cv::Mat & descriptorsLeft, cv::Mat &descriptorsRight);
   public:
     // Tracking states
     enum eTrackingState{
@@ -100,6 +101,7 @@ void GenerateBitFrame(cv::Mat &imLeft,cv::Mat &imRight,std::vector<cv::KeyPoint>
     Frame mCurrentFrame;
     cv::Mat mImGray;
     Frame mRefFrame;
+    std::mutex mMutexBitFrame;
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
@@ -122,6 +124,8 @@ void GenerateBitFrame(cv::Mat &imLeft,cv::Mat &imRight,std::vector<cv::KeyPoint>
     ORBextractor* mpColextractorLeft, *mpColextractorRight;
     ORBextractor* mpBitextractorLeft, *mpBitextractorRight;
     Frame bitframe;
+
+    KeyFrame* mpLastKeyFrame;
 protected:
 
     // Main tracking function. It is independent of the input sensor.
@@ -210,7 +214,6 @@ protected:
     int mnMatchesInliers;
 
     //Last Frame, KeyFrame and Relocalisation Info
-    KeyFrame* mpLastKeyFrame;
     Frame mLastFrame;
     unsigned int mnLastKeyFrameId;
     unsigned int mnLastRelocFrameId;

@@ -16,6 +16,8 @@
 #include "util.hpp"
 #include "DataRecorder.h"
 
+#include<stdio.h>
+#include<stdlib.h>
 using namespace ORB_SLAM2;
 class MavState;
 class MavSensors;
@@ -44,6 +46,7 @@ class MavNavigator
     //date record thread
     void DrawTrajThread(void);
     void RecordThread(void);
+    void RecordGsThread(void);
 
     void pos1Callback(const nav_msgs::Odometry &msg);
     void pos2Callback(const nav_msgs::Odometry &msg);
@@ -73,6 +76,11 @@ class MavNavigator
     Eigen::Vector3d record_pos[3];
     bool has_communication[3];
     thread draw_thread_;
+    thread record_thread_;
+    DataRecorder* recorder;
+
+    thread record_gs_thread_;
+    DataRecorder* gs_recorder;
   private:
     MavState *state_;
     MavSensors *sensors_;
@@ -83,13 +91,16 @@ class MavNavigator
     double old_update_bias_time = 0;
     long last_colocal_time = 0;
     long current_colocal_time = 0;
-    double colocal_interval = 4;
+    double colocal_interval = 5;
     double colocal_interval_offset = 0;
     std::normal_distribution<> colocal_time_norm{0,0.15};
 
     bool record_start = false;
     int trans_data_raw = 0;
     int trans_data = 0;
+    
+    bool need_new_colocal = false;
+    Eigen::Vector3d last_comm_pos;
 };
 
 inline double Distance(double x1, double y1, double x2, double y2)

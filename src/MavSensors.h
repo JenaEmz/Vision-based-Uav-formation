@@ -29,6 +29,7 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <mavros_msgs/RTCM.h>
 
 #include "MavState.h"
 #include "util.hpp"
@@ -40,7 +41,7 @@ typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sens
 class MavSensors
 {
 public:
-    MavSensors(string name,string cam_name_1);
+    MavSensors(string name,string cam_name_1,MavState* state);
     ~MavSensors();
     
     void RecordImgOnce();
@@ -48,7 +49,7 @@ public:
     void GetStereoImage(cv::Mat& left,cv::Mat& Right);
     void GetPubOrbslam(cv::Mat &left, cv::Mat &Right);
     System *orb_local;
-
+    void gsCallback(const nav_msgs::Odometry &msg);
 private:
     string name_;
     string cam_name_1_;
@@ -68,6 +69,8 @@ private:
     
     ros::Publisher orb_pub_;
     ros::Publisher exvision_pub_;
+    ros::Publisher fake_gps_pub_;
+    double last_x,last_y;
     int frame_id = 0;
     geometry_msgs::PoseWithCovarianceStamped svo_position_;
     ros::Time last_svo_estimate_;
@@ -80,6 +83,7 @@ private:
     bool send_vision_estimate_ = false;
  
     geometry_msgs::PoseStamped vision_pos_ENU_;
+    geometry_msgs::TransformStamped fake_gps_msg;
     
     void SvoPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg);
     
@@ -88,8 +92,10 @@ private:
     
     message_filters::Synchronizer<sync_pol>* sync;
     void SyncStereoCallback(const sensor_msgs::ImageConstPtr& msg0,const sensor_msgs::ImageConstPtr& msg1);
-
-
+    Eigen::Vector3d gs_pos;
+    Eigen::Quaterniond gs_q;
+ros::Subscriber gs_sub;
+int times;
 };
 
 #endif //MavSensors

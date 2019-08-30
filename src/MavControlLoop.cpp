@@ -4,8 +4,8 @@ MavControlLoop::MavControlLoop(const string name)
 {
     name_ = name;
     set_vel_pub_ = nh_.advertise<mavros_msgs::PositionTarget>(name_+"/mavros/setpoint_raw/local", 10);
-    pos_P_ << 0.3, 0, 0,
-        0, 0.3, 0,
+    pos_P_ << 0.4, 0, 0,
+        0, 0.4, 0,
         0, 0, 0.5;
     set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>(name_+"/mavros/set_mode");
 }
@@ -17,10 +17,11 @@ void MavControlLoop::ControlLoopThread(void)
 {
     mavros_msgs::PositionTarget vel_msg{};
     set_vel_pub_.publish(vel_msg);
-    if(ros::Time::now() - last_offboard > ros::Duration(5.0))
+    ++times;
+    if(times>20)
     {
         setOffboard();
-        last_offboard = ros::Time::now();
+        times = 0;
     }
 }
 void MavControlLoop::ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d &pos, double yaw, double yaw_sp)
@@ -35,7 +36,7 @@ void MavControlLoop::ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d 
                     mavros_msgs::PositionTarget::FORCE | mavros_msgs::PositionTarget::IGNORE_YAW;
     
     Eigen::Vector3d vel_sp = pos_P_ * (pos_sp - pos);
-    ConstrainVector(vel_sp, 1.0,1.0);
+    ConstrainVector(vel_sp, 1.0,1.5);
     vel_msg.velocity.x = vel_sp(0);
     vel_msg.velocity.y = vel_sp(1);
     vel_msg.velocity.z = vel_sp(2);
@@ -52,10 +53,11 @@ void MavControlLoop::ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d 
     //printf("yaw:%lf,%lf,%lf\n",yaw,yaw_sp,yaw_rate);
     vel_msg.yaw_rate = (yaw_rate);
     set_vel_pub_.publish(vel_msg);
-    if(ros::Time::now() - last_offboard > ros::Duration(5.0))
+    ++times;
+    if(times>20)
     {
         setOffboard();
-        last_offboard = ros::Time::now();
+        times = 0;
     }
 }
 void MavControlLoop::ControlLoopThread(Eigen::Vector3d &vel_sp, double yaw, double yaw_sp)
@@ -83,10 +85,11 @@ void MavControlLoop::ControlLoopThread(Eigen::Vector3d &vel_sp, double yaw, doub
 
     vel_msg.yaw_rate = (yaw_rate);
     set_vel_pub_.publish(vel_msg);
-    if(ros::Time::now() - last_offboard > ros::Duration(5.0))
+    ++times;
+    if(times>20)
     {
         setOffboard();
-        last_offboard = ros::Time::now();
+        times = 0;
     }
 }
 bool MavControlLoop::arm()

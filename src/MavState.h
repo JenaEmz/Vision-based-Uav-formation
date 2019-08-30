@@ -68,6 +68,9 @@ public:
   friend class MavNavigator;
   void SetBias(double x, double y, double z);
 
+  Eigen::Vector3d slam_pos;
+
+  Eigen::Vector3d mav_pos, mav_vel, mav_euler,groundtruth;
 private:
   bool MavOk = false;
   MavControlLoop *controller_;
@@ -82,7 +85,6 @@ private:
 
   Eigen::Vector3d target_pos_, target_vel_;
   double target_yaw = 0;
-  Eigen::Vector3d mav_pos, mav_vel, mav_euler,groundtruth;
   Eigen::Vector3d bias;
   double bias_yaw = 0;
   matrix::Quatf mav_q;

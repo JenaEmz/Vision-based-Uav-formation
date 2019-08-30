@@ -5,20 +5,27 @@ DataRecorder::DataRecorder(void):m_id(0),m_name("")
 {
 
 }
-DataRecorder::DataRecorder(int id,string name):m_id(id),m_name(name)
+DataRecorder::DataRecorder(const char* head,const char* path)
 {
-    char timeinfo[256] ={0};
-    time_t nowtime = time(NULL);
-    struct tm *p;
-    p = gmtime(&nowtime);
+    mode_t fileperms;
 
-    sprintf(timeinfo,"/home/jena/csq_ws/logs/%d_%d_%d_%d_%02d_",1900+p->tm_year,1+p->tm_mon,p->tm_mday,8+p->tm_hour,p->tm_min);
-    m_file_name = string(timeinfo);
-    m_file_name+=name;
-    m_file_name+=".txt";
-    m_file_fd = open(m_file_name.c_str(),ios::out|ios::in);
-    char head[]="timestamp\tinit_state\tx\ty\tz\ttrans_data\ttrans_data_raw\tgroundtruth_x\tgroundtruth_y\tgroundtruth_z\n";
-    write(m_file_fd,head,strlen(head));
+    int openflags = O_WRONLY | O_CREAT | O_TRUNC;
+
+    //rwxrw-r-x
+    fileperms = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IXOTH;
+    m_file_fd = open(path,openflags, fileperms);
+    printf("log name %s\n",path);
+    if(m_file_fd<0)
+    {
+        printf("open log error\n");
+    }
+    //char head[256]={0};
+    //sprintf(head,"%dtimestamp\t%dinit_state\t%dx\t%dy\t%dz\t%dtrans_data\t%dtrans_data_raw\t%dgroundtruth_x\t%dgroundtruth_y\t%dgroundtruth_z\n",id,id,id,id,id,id,id,id,id,id);
+    
+    if(write(m_file_fd,head,strlen(head))<0)
+    {
+        printf("write log error\n");
+    }
 }
 
 DataRecorder::~DataRecorder()

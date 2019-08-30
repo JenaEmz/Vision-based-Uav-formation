@@ -116,7 +116,8 @@ public:
     cv::Mat TrackFromBitstream(cv::Mat &init, cv::Mat &imLeft, cv::Mat &imRight, const std::vector<cv::KeyPoint> &keyPointsLeft, const cv::Mat &descriptorLeft,
                                const std::vector<cv::KeyPoint> &keyPointsRight, const cv::Mat &descriptorRight,
                                const std::vector<float> &mvuRight, const std::vector<float> &mvDepth, bool insert_key,int msg_id);
-    void GenerateBitstream(cv::Mat &imLeft,cv::Mat &imRight, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size);
+    void GenerateBitstream(cv::Mat &imLeft,cv::Mat imRight, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size);
+    //void GenerateBitstream(cv::Mat &Tcw, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size);
     void ExtractORB(int flag, const cv::Mat &im, std::vector<cv::KeyPoint> &vKeys, cv::Mat &descriptors);
     LBFC2::FeatureCoder *mEncoder;
     LBFC2::FeatureCoder *mDecoder;

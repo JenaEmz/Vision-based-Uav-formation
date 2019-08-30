@@ -1,4 +1,4 @@
-/**
+/***
 * This file is part of ORB-SLAM2.
 *
 * Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
@@ -1878,11 +1878,12 @@ cv::Mat Tracking::RegenerateRefFrame(cv::Mat &init,const std::vector<cv::KeyPoin
                 }
             }
         }
+        
+        //mpLocalMapper->EmergenceBundleAdjustment(pKF);
         mpLocalMapper->InsertKeyFrame(pKF);
-
         mpLocalMapper->SetNotStop(false);
         //插入新keyframe end
-        return mRefFrame.mTcw;
+        return pKF->GetPose();
     }
 }
 
