@@ -34,7 +34,7 @@ private:
     ros::Time last_offboard = ros::Time::now();
     ros::ServiceClient set_mode_client_;
 
-    double yaw_P_ = 1.3;
+    double yaw_P_ = 0.2;
     Eigen::Matrix3d pos_P_;
     int times = 0;
 };

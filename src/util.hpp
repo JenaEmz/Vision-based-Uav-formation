@@ -92,9 +92,17 @@ public:
         Eigen::Quaterniond ned_q;
 
         toCvMatInverse(Tcw, Twc);
-        CvToSE3(Tcw, ned_q, ned_t);
-        enu_q = Eigen::Quaterniond(ned_q.w(), ned_q.x(), ned_q.z(), ned_q.y());
-        enu_t << ned_t(0), ned_t(2), ned_t(1);
+        CvToSE3(Twc, ned_q, ned_t);
+        enu_t <<  ned_t(2),-ned_t(0), -ned_t(1);
+        enu_q = Eigen::Quaterniond(ned_q.w(), ned_q.z(), ned_q.x(), ned_q.y());
+
+        //printf("enu_q:%f,%f,%f,%f,ned_t\n",ned_q.w(), ned_q.x(), ned_q.y(), ned_q.z());
+        /*cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t();
+        cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);*/
+        /*enu_q = Eigen::Quaterniond(ned_q.w(), ned_q.x(), ned_q.x(), ned_q.y());
+        //printf("new t:%f,%f,%f\n", twc.at<float>(0), twc.at<float>(1), twc.at<float>(2));
+        printf("enu_q:%f,%f,%f,%f\n",ned_q.w(), ned_q.x(), ned_q.y(), ned_q.z());
+        enu_t << ned_t(0), ned_t(2), ned_t(1);*/
     }
 };
 

@@ -146,7 +146,7 @@ bool MavNavigator::Mission(MissionPoint &Mission)
             struct timeval cur_time;
             gettimeofday(&cur_time, NULL);
             current_colocal_time = cur_time.tv_sec*1000000 + cur_time.tv_usec;
-            if((current_colocal_time - last_colocal_time)>1000000*(colocal_interval)||need_new_colocal)
+            if((current_colocal_time - last_colocal_time)>1000000*(colocal_interval+colocal_interval_offset)||need_new_colocal)
             {
                 need_new_colocal = true;
             }
@@ -158,8 +158,8 @@ bool MavNavigator::Mission(MissionPoint &Mission)
                 std::random_device rd;
                 std::default_random_engine rng {rd()};
                 colocal_interval_offset = colocal_time_norm(rng);
-                if(colocal_interval_offset<-1)colocal_interval_offset = -1;
-                else if(colocal_interval_offset>1)colocal_interval_offset=1;
+                if(colocal_interval_offset<-2)colocal_interval_offset = -2;
+                else if(colocal_interval_offset>2)colocal_interval_offset=2;
 
                 last_comm_pos(0) = state_->slam_pos(0);
                 last_comm_pos(1) = state_->slam_pos(1);
@@ -429,8 +429,8 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
         Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
         SlamPoseTrans::SlamToLocalpose_test(res,ned_q,ned_t);
         Eigen::Quaterniond rot_q( 0.70710678118655  ,0, 0, 0.70710678118655 );
-        Eigen::Quaterniond new_q = (ned_q*rot_q*msg_q);
-        Eigen::Vector3d new_t = msg_t - ned_q*rot_q* ned_t;
+        Eigen::Quaterniond new_q = ned_q;
+        Eigen::Vector3d new_t = msg_t - ned_t;
         
         Eigen::Vector3d rel_t = rot_q* ned_t;
         has_communication[msg->nrobotid] = true;
@@ -476,7 +476,7 @@ void MavNavigator::FormationCallback(const px4_csq::colocal_request &msg)
     formation_pos(0) = msg.x;
     formation_pos(1) = msg.y;
     formation_pos(2) = msg.z;
-    formation_yaw = 0;//msg.yaw;
+    formation_yaw = msg.yaw;
 }
 /*
 void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
@@ -611,8 +611,8 @@ void MavNavigator::RecordGsThread(void)
             memset(&data,0,sizeof(data));
             sprintf(data,"%ld\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",now_time,record_pos[0](0),record_pos[0](1),record_pos[0](2),record_pos[1](0),record_pos[1](1),record_pos[1](2),record_pos[2](0),record_pos[2](1),record_pos[2](2));
             gs_recorder->Record(data,0);
-           // printf("rel pos of 1 and 2:%f,%f\n",(record_pos[0](0)-record_pos[2](0)),(record_pos[0](1)-record_pos[2](1)));
-           printf("pos of 0:%f,%f est pos %f,%f\n",(record_pos[0](0)),(record_pos[0](1)),state_->slam_pos(0),state_->slam_pos(1));
+            //printf("rel pos of 1 and 2:%f,%f\n",(record_pos[0](0)-record_pos[2](0)),(record_pos[0](1)-record_pos[2](1)));
+           //printf("pos of 0:%f,%f est pos %f,%f\n",(record_pos[0](0)),(record_pos[0](1)),state_->slam_pos(0),state_->slam_pos(1));
         }
         std::this_thread::sleep_for(std::chrono::duration<double>(0.2));
     }

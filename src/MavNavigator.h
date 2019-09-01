@@ -91,7 +91,7 @@ class MavNavigator
     double old_update_bias_time = 0;
     long last_colocal_time = 0;
     long current_colocal_time = 0;
-    double colocal_interval = 5;
+    double colocal_interval = 8;
     double colocal_interval_offset = 0;
     std::normal_distribution<> colocal_time_norm{0,0.15};
 

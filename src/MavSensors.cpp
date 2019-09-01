@@ -38,62 +38,6 @@ MavSensors::~MavSensors()
 
 void MavSensors::SvoPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
 {
-    /*svo_position_ = *msg;
-    if(!state_->localposeIsOK)return;
-    if (ros::Time::now() - last_svo_estimate_ > ros::Duration(1.0))
-    {
-        // svo_position is the first pose message after initialization/recovery, need to set svo_init_pos
-        ROS_INFO("svo_init_pos = local_position");
-        svo_init_pos_ = state_->local_position_;
-
-        // Transformation from world to svo_init
-        transformStamped_.header.stamp = svo_position_.header.stamp;
-        transformStamped_.header.frame_id = "world";
-        transformStamped_.child_frame_id = "svo_init";
-        transformStamped_.transform.translation.x = svo_init_pos_.pose.position.x;
-        transformStamped_.transform.translation.y = svo_init_pos_.pose.position.y;
-        transformStamped_.transform.translation.z = svo_init_pos_.pose.position.z;
-        transformStamped_.transform.rotation = svo_init_pos_.pose.orientation;
-
-        svoinitToWorld.sendTransform(transformStamped_);
-    }
-
-    // Transformation from svo_init to drone_vision
-    last_svo_estimate_ = ros::Time::now();
-    transformStamped_.header.stamp = svo_position_.header.stamp;
-    transformStamped_.header.frame_id = "svo_init";
-    transformStamped_.child_frame_id = "drone_vision";
-    transformStamped_.transform.translation.x = svo_position_.pose.pose.position.x;
-    transformStamped_.transform.translation.y = svo_position_.pose.pose.position.y;
-    transformStamped_.transform.translation.z = svo_position_.pose.pose.position.z;
-    transformStamped_.transform.rotation = svo_position_.pose.pose.orientation;
-    svoToSvoinit.sendTransform(transformStamped_);
-    if (send_vision_estimate_)
-    {
-        try
-        {
-            // Send vision position estimate to mavros
-            transformStamped_ = tfBuffer_.lookupTransform("world", "drone_vision", ros::Time(0));
-            vision_pos_ENU_.header.stamp = svo_position_.header.stamp;
-            vision_pos_ENU_.header.frame_id = "world";
-            vision_pos_ENU_.pose.position.x = transformStamped_.transform.translation.x;
-            vision_pos_ENU_.pose.position.y = transformStamped_.transform.translation.y;
-            vision_pos_ENU_.pose.position.z = transformStamped_.transform.translation.z;
-            vision_pos_ENU_.pose.orientation = transformStamped_.transform.rotation;
-            //computer2mav_pub_.publish(vision_pos_ENU_);
-
-            cnt++;
-            if (cnt % 1 == 0)
-            {
-                printf("Vision position lookup: E: %f, N: %f, U: %f, yaw: %f\n", transformStamped_.transform.translation.x,
-                         transformStamped_.transform.translation.y, transformStamped_.transform.translation.z, getYaw(transformStamped_.transform.rotation));
-            }
-        }
-        catch (tf2::TransformException &ex)
-        {
-            ROS_ERROR("%s", ex.what());
-        }
-    }*/
 }
 
 double MavSensors::getYaw(const geometry_msgs::Quaternion &msg)
@@ -166,21 +110,24 @@ void MavSensors::GetStereoImage(cv::Mat &left, cv::Mat &Right)
 void MavSensors::GetPubOrbslam(cv::Mat &left, cv::Mat &Right)
 {
     ++times;
-    
+    if(times>1)
+    {
     cv::Mat res;
 
     res = orb_local->TrackStereo(left,Right,++frame_id);
     Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
-    if(!res.empty())
+    if(!res.empty()&&state_->has_init_q)
     {
         SlamPoseTrans::SlamToLocalpose_test(res,ned_q,ned_t);
 
         Eigen::Quaterniond rot_q( 0.70710678118655  ,0, 0, 0.70710678118655 );
-        Eigen::Quaterniond new_q = ned_q;//(ned_q*rot_q);
-        Eigen::Vector3d new_t = rot_q* ned_t ;
+        //Eigen::Quaterniond new_q = ned_q  ;//(ned_q*rot_q);
+        //Eigen::Vector3d new_t = new_q*rot_q* ned_t  ;
+        Eigen::Quaterniond new_q = ned_q;
+        Eigen::Vector3d new_t = ned_t  ;
         state_->slam_pos<<new_t(0),new_t(1),new_t(2);
-        
-        if(abs(last_x-new_t(0))>2||abs(last_y-new_t(1))>2)
+        //printf("origin mat:%f,%f,%f\n",res.at<float>(0, 3), res.at<float>(1, 3), res.at<float>(2, 3));
+        if(abs(last_x-new_t(0))>0.5||abs(last_y-new_t(1))>0.5)
         return;
 
         last_x = new_t(0);
@@ -223,7 +170,7 @@ void MavSensors::GetPubOrbslam(cv::Mat &left, cv::Mat &Right)
         fake_gps_pub_.publish(fake_gps_msg);*/
         }
     }
-    
+    }
     //exvision_pub_.publish(vision_pos_ENU_);
 }
 void MavSensors::gsCallback(const nav_msgs::Odometry &msg)

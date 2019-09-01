@@ -112,7 +112,7 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
         mMutexRelKeyframe.unlock();
-        usleep(3000);
+        usleep(10000);
     }
 
     SetFinish();

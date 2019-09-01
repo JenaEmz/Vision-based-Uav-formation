@@ -38,6 +38,12 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     {
         return;
     }
+    if(!has_init_q)
+    {
+        has_init_q = true;
+        init_q = Eigen::Quaterniond(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
+        printf("init_q:%f,%f,%f,%f\n",msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
+    }
     local_position_ = msg;
     localposeIsOK = true;
     /*mav_pos(0) = msg.pose.position.x;
@@ -53,6 +59,7 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     mav_pos(1) = msg.pose.position.y + bias(1);*/
     mav_pos(2) = msg.pose.position.z + bias(2);
     
+//printf("new_t:%f,%f true %f,%f\n",slam_pos(0),slam_pos(1),msg.pose.position.x,msg.pose.position.y);
     mav_q = matrix::Quatf(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
     mav_yaw = matrix::Eulerf(mav_q).psi();
     switch (ctr_type_)

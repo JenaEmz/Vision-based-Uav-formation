@@ -36,7 +36,7 @@ void MavControlLoop::ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d 
                     mavros_msgs::PositionTarget::FORCE | mavros_msgs::PositionTarget::IGNORE_YAW;
     
     Eigen::Vector3d vel_sp = pos_P_ * (pos_sp - pos);
-    ConstrainVector(vel_sp, 1.0,1.5);
+    ConstrainVector(vel_sp, 1.5,1.5);
     vel_msg.velocity.x = vel_sp(0);
     vel_msg.velocity.y = vel_sp(1);
     vel_msg.velocity.z = vel_sp(2);

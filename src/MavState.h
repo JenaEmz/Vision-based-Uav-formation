@@ -71,6 +71,9 @@ public:
   Eigen::Vector3d slam_pos;
 
   Eigen::Vector3d mav_pos, mav_vel, mav_euler,groundtruth;
+
+  bool has_init_q = false;
+  Eigen::Quaterniond init_q;
 private:
   bool MavOk = false;
   MavControlLoop *controller_;
@@ -89,7 +92,6 @@ private:
   double bias_yaw = 0;
   matrix::Quatf mav_q;
   double mav_yaw;
-
   void MavStateCallback(const mavros_msgs::State::ConstPtr &msg);
   void MavPoseCallback(const geometry_msgs::PoseStamped &msg);
   void MavVelCallback(const geometry_msgs::TwistStamped &msg);
