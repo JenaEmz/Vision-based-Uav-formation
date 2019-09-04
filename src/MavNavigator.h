@@ -31,11 +31,13 @@ class MavNavigator
     void Land(double x, double y);
     void Hover();
     void MoveTo(double x,double y,double z,double yaw);
+    void FormationTo(double x, double y, double z, double yaw);
     void Hold(double x,double y,double z,double yaw);
     bool Mission(MissionPoint &Mission);
 
     //void UpdateBiasThread();
     void UpdateBias();//包含请求的发送
+    void CalculateFormationOffset();
 
     void RequestCallback(const px4_csq::colocal_request &msg);//接受请求，计算共视角后发送自身特征和姿态d
     void ResponsCallback(const px4_csq::frame_rosPtr msg);
@@ -48,15 +50,20 @@ class MavNavigator
     void RecordThread(void);
     void RecordGsThread(void);
 
-    void pos1Callback(const nav_msgs::Odometry &msg);
-    void pos2Callback(const nav_msgs::Odometry &msg);
-    void pos3Callback(const nav_msgs::Odometry &msg);
+    void pos1Callback(const geometry_msgs::PoseStamped &msg);
+    void pos2Callback(const geometry_msgs::PoseStamped &msg);
+    void pos3Callback(const geometry_msgs::PoseStamped &msg);
+
+    void gs1Callback(const nav_msgs::Odometry &msg);
+    void gs2Callback(const nav_msgs::Odometry &msg);
+    void gs3Callback(const nav_msgs::Odometry &msg);
 
     ros::NodeHandle nh_;
     ros::Subscriber request_sub;
     ros::Publisher request_pub;
     ros::Subscriber self_respons_sub;
     //vector<ros::Subscriber> other_pose_subs;
+    ros::Subscriber other_gs_sub[3];
     ros::Subscriber other_pos_sub[3];
     vector<ros::Publisher> other_respons_pubs;
     //vector<px4_csq::pose_with_state> other_states;
@@ -74,6 +81,8 @@ class MavNavigator
 
     Eigen::Vector3d last_record_pos[3];
     Eigen::Vector3d record_pos[3];
+
+    Eigen::Vector3d other_pos[3];
     bool has_communication[3];
     thread draw_thread_;
     thread record_thread_;

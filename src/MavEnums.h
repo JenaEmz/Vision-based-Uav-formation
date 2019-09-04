@@ -6,7 +6,8 @@ enum ControlType
 {
     NOT_CONTROL = 0,
     NORMAL_POSITION,
-    NORMAL_VELOCITY
+    NORMAL_VELOCITY,
+    VISION_FORMATION
 };
 enum CommandType
 {

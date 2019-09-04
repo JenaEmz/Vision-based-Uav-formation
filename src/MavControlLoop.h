@@ -23,6 +23,7 @@ public:
     ~MavControlLoop();
     void ControlLoopThread(void);
     void ControlLoopThread(Eigen::Vector3d& pos_sp,Eigen::Vector3d& pos,double yaw,double yaw_sp);
+    void ControlLoopThread(Eigen::Vector3d &pos_sp, Eigen::Vector3d &pos, double yaw, double yaw_sp,Eigen::Vector3d &formation_offset);
     void ControlLoopThread(Eigen::Vector3d& vel_sp,double yaw,double yaw_sp);
     bool arm();
     bool setOffboard();
@@ -34,7 +35,7 @@ private:
     ros::Time last_offboard = ros::Time::now();
     ros::ServiceClient set_mode_client_;
 
-    double yaw_P_ = 0.2;
+    double yaw_P_ = 0.4;
     Eigen::Matrix3d pos_P_;
     int times = 0;
 };

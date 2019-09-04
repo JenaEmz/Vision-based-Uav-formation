@@ -8,13 +8,13 @@ MavSensors::MavSensors(string name, string cam_name_1,MavState* state) : name_(n
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     sync = new message_filters::Synchronizer<sync_pol>(sync_pol(10), *left_sub, *right_sub);
     sync->registerCallback(boost::bind(&MavSensors::SyncStereoCallback, this, _1, _2));
-    orb_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/mavros/vision_pose/pose", 10);
+    orb_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/mavros/vision_pose/pose", 1);
     //orb_pub_ = nh_.advertise<geometry_msgs::TransformStamped>(name_ + "/mavros/fake_gps/mocap/tf", 10);
     fake_gps_pub_  = nh_.advertise<geometry_msgs::TransformStamped>(name_ + "/mavros/fake_gps/mocap/tf", 10);
     exvision_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/mavros/mocap/pose", 10);
     orb_local = nullptr;
     state_ = state;
-    gs_sub = nh_.subscribe("/uav1/ground_truth/state", 10, &MavSensors::gsCallback, this);
+    //gs_sub = nh_.subscribe(name_ +"/uav1/ground_truth/state", 10, &MavSensors::gsCallback, this);
     //fake_gps_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/mavros/gps_rtk/send_rtcm", 10);
     //nh_.subscribe(name_ + "/mavros/state", 1, &MavState::MavStateCallback, this);
     /*vo2computer_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/svo/pose_imu", 1, &MavSensors::SvoPoseCallback, this);
@@ -107,10 +107,14 @@ void MavSensors::GetStereoImage(cv::Mat &left, cv::Mat &Right)
     left = leftImg_.clone();
     Right = rightImg_.clone();
 }
+/*void MavSensors::GetCurrentBitstream(std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size)
+{
+    std::lock_guard<std::mutex> lck(imgMtx);
+}*/
 void MavSensors::GetPubOrbslam(cv::Mat &left, cv::Mat &Right)
 {
     ++times;
-    if(times>1)
+    if(times>0)
     {
     cv::Mat res;
 
@@ -126,9 +130,10 @@ void MavSensors::GetPubOrbslam(cv::Mat &left, cv::Mat &Right)
         Eigen::Quaterniond new_q = ned_q;
         Eigen::Vector3d new_t = ned_t  ;
         state_->slam_pos<<new_t(0),new_t(1),new_t(2);
+        state_->slam_q = Eigen::Quaterniond(ned_q); 
         //printf("origin mat:%f,%f,%f\n",res.at<float>(0, 3), res.at<float>(1, 3), res.at<float>(2, 3));
-        if(abs(last_x-new_t(0))>0.5||abs(last_y-new_t(1))>0.5)
-        return;
+        //if(abs(last_x-new_t(0))>0.5||abs(last_y-new_t(1))>0.5)
+        //return;
 
         last_x = new_t(0);
         last_y = new_t(1);

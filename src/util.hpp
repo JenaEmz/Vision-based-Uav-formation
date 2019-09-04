@@ -94,7 +94,7 @@ public:
         toCvMatInverse(Tcw, Twc);
         CvToSE3(Twc, ned_q, ned_t);
         enu_t <<  ned_t(2),-ned_t(0), -ned_t(1);
-        enu_q = Eigen::Quaterniond(ned_q.w(), ned_q.z(), ned_q.x(), ned_q.y());
+        enu_q = Eigen::Quaterniond(-ned_q.w(), -ned_q.z(), ned_q.x(), ned_q.y());
 
         //printf("enu_q:%f,%f,%f,%f,ned_t\n",ned_q.w(), ned_q.x(), ned_q.y(), ned_q.z());
         /*cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t();

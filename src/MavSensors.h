@@ -50,6 +50,8 @@ public:
     void GetPubOrbslam(cv::Mat &left, cv::Mat &Right);
     System *orb_local;
     void gsCallback(const nav_msgs::Odometry &msg);
+
+    std::mutex imgMtx;
 private:
     string name_;
     string cam_name_1_;
@@ -57,7 +59,6 @@ private:
     int img_id = 0;
     MavState *state_;
     cv::Mat leftImg_, rightImg_;
-    std::mutex imgMtx;
 
     ros::NodeHandle nh_;
     tf2_ros::Buffer tfBuffer_;

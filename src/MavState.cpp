@@ -7,12 +7,13 @@ MavState::MavState(const string& name, MavControlLoop *controller) : controller_
     MavOk = true;
     state_sub_ = nh_.subscribe(name_ + "/mavros/state", 1, &MavState::MavStateCallback, this);
     local_pose_sub_ = nh_.subscribe(name_ + "/mavros/local_position/pose", 5, &MavState::MavPoseCallback, this);
-    vel_sub_ = nh_.subscribe(name_ + "/mavros/local_position/velocity", 1, &MavState::MavVelCallback, this);
- 
+    //vel_sub_ = nh_.subscribe(name_ + "/mavros/local_position/velocity_local", 1, &MavState::MavVelCallback, this);
+    slam_pos_pub =  nh_.advertise<geometry_msgs::PoseStamped>(name_ + "/slam_pose", 1);
     self_id = atoi(name_.substr(4,1).c_str());
     has_colocal_inited = false;
     if(self_id==0)has_colocal_inited = true;
     bias<<0,0,0;
+    formation_offset<<0,0,0;
 }
 
 MavState::~MavState()
@@ -58,18 +59,26 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
     /*mav_pos(0) = msg.pose.position.x + bias(0);
     mav_pos(1) = msg.pose.position.y + bias(1);*/
     mav_pos(2) = msg.pose.position.z + bias(2);
-    
-//printf("new_t:%f,%f true %f,%f\n",slam_pos(0),slam_pos(1),msg.pose.position.x,msg.pose.position.y);
+    //printf("slam q:%f,%f,%f,%f mav q:%f,%f,%f,%f\n",slam_q.w(),slam_q.x(),slam_q.y(),slam_q.z(),msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
+    //printf("new_t:%f,%f true %f,%f\n",slam_pos(0),slam_pos(1),msg.pose.position.x,msg.pose.position.y);
     mav_q = matrix::Quatf(msg.pose.orientation.w,msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z);
     mav_yaw = matrix::Eulerf(mav_q).psi();
+    slam_bias_msg.pose.position.x = slam_pos(0) + bias(0);
+    slam_bias_msg.pose.position.y = slam_pos(1) + bias(1);
+    slam_pos_pub.publish(slam_bias_msg);
     switch (ctr_type_)
     {
     case NOT_CONTROL:
         break;
     case NORMAL_POSITION:
-        pos_setpoint_mutex_.lock();
+        //pos_setpoint_mutex_.lock();
         controller_->ControlLoopThread(target_pos_, mav_pos, mav_yaw, target_yaw);
-        pos_setpoint_mutex_.unlock();
+        //pos_setpoint_mutex_.unlock();
+        break;
+    case VISION_FORMATION:
+        //pos_setpoint_mutex_.lock();
+        controller_->ControlLoopThread(target_pos_, mav_pos, mav_yaw, target_yaw,formation_offset);
+        //pos_setpoint_mutex_.unlock();
         break;
     case NORMAL_VELOCITY:
         vel_setpoint_mutex_.lock();
@@ -82,9 +91,16 @@ void MavState::MavPoseCallback(const geometry_msgs::PoseStamped &msg)
 }
 void MavState::MavVelCallback(const geometry_msgs::TwistStamped &msg)
 {
+    static int time;
     mav_vel(0) = msg.twist.linear.x;
     mav_vel(1) = msg.twist.linear.y;
     mav_vel(2) = msg.twist.linear.z;
+    /*++time;
+    if(self_id == 0&&time>1)
+    {
+        time = 0;
+        printf("vel:%f,%f\n",mav_vel(1),mav_vel(2));
+    }*/
 }
 void MavState::GroundTruthCallback(const geometry_msgs::PoseStamped &msg)
 {
@@ -133,9 +149,7 @@ void MavState::set_yaw_sp(double yaw_sp)
 }
 void MavState::set_pos_sp(double x, double y, double z)
 {
-    pos_setpoint_mutex_.lock();
     target_pos_ << x, y, z;
-    pos_setpoint_mutex_.unlock();
 }
 void MavState::set_vel_sp(double vx, double vy, double vz)
 {

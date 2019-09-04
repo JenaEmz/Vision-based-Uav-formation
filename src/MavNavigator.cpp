@@ -22,9 +22,13 @@ MavNavigator::MavNavigator(MavState *state, MavSensors *sensors, const string &c
     //编队部分
     formation_target_sub = nh_.subscribe(state->name_ + "/formation_msg", 10, &MavNavigator::FormationCallback, this);
     
-    other_pos_sub[0] = nh_.subscribe("/uav0/ground_truth/state", 10, &MavNavigator::pos1Callback, this);
-    other_pos_sub[1] = nh_.subscribe("/uav1/ground_truth/state", 10, &MavNavigator::pos2Callback, this);
-    other_pos_sub[2] = nh_.subscribe("/uav2/ground_truth/state", 10, &MavNavigator::pos3Callback, this);
+    other_gs_sub[0] = nh_.subscribe("/uav0/ground_truth/state", 10, &MavNavigator::gs1Callback, this);
+    other_gs_sub[1] = nh_.subscribe("/uav1/ground_truth/state", 10, &MavNavigator::gs2Callback, this);
+    other_gs_sub[2] = nh_.subscribe("/uav2/ground_truth/state", 10, &MavNavigator::gs3Callback, this);
+
+    other_pos_sub[0] = nh_.subscribe("/uav0/slam_pose", 10, &MavNavigator::pos1Callback, this);
+    other_pos_sub[1] = nh_.subscribe("/uav1/slam_pose", 10, &MavNavigator::pos2Callback, this);
+    other_pos_sub[2] = nh_.subscribe("/uav2/slam_pose", 10, &MavNavigator::pos3Callback, this);
     
     for (int i = 0; i < state_->total_num; i++)
     {
@@ -86,6 +90,12 @@ void MavNavigator::MoveTo(double x, double y, double z, double yaw)
     state_->set_yaw_sp(yaw);
     state_->set_control_mode(NORMAL_POSITION);
 }
+void MavNavigator::FormationTo(double x, double y, double z, double yaw)
+{
+    state_->set_pos_sp(x, y, z);
+    state_->set_yaw_sp(yaw);
+    state_->set_control_mode(VISION_FORMATION);
+}
 void MavNavigator::Hold(double x, double y, double z, double yaw)
 {
     state_->set_pos_sp(x, y, z);
@@ -134,7 +144,8 @@ bool MavNavigator::Mission(MissionPoint &Mission)
         record_start = true;
         if(state_->has_colocal_inited)
         {
-            MoveTo(formation_pos(0), formation_pos(1), formation_pos(2),formation_yaw);
+            CalculateFormationOffset();
+            FormationTo(formation_pos(0), formation_pos(1), formation_pos(2),formation_yaw);
             
             float dist_x = last_comm_pos(0)-state_->slam_pos(0);
             float dist_y = last_comm_pos(1)-state_->slam_pos(1);
@@ -270,9 +281,9 @@ void MavNavigator::PubRespons(int id)
 {
     px4_csq::frame_ros msg;
     msg.nrobotid = state_->self_id;
-    cv::Mat right, left;
+    //cv::Mat right, left;
     //std::cout << "Pub respons from:" << state_->self_id << std::endl;
-    sensors_->GetStereoImage(left, right);
+    //sensors_->GetStereoImage(left, right);
     //cv::imwrite("/home/jena/csq_ws/wrong_0_0.jpg",left);
     //cv::imwrite("/home/jena/csq_ws/wrong_0_1.jpg",right);
     
@@ -300,37 +311,33 @@ void MavNavigator::PubRespons(int id)
         printf("图像为空？\n");
         return;
     }*/
-    coLocal->GenerateBitstream(left,right,bitstream, mvuRight,mvDepth,raw_size );
+    sensors_->imgMtx.lock();
+    coLocal->CurrentFrameBitstream(Tcw,bitstream, mvuRight,mvDepth,raw_size );
+    sensors_->imgMtx.unlock();
     //coLocal->GenerateBitstream(Tcw,bitstream, mvuRight,mvDepth,raw_size );
     Eigen::Vector3d new_t;
     Eigen::Quaterniond new_q;
-    /*if(!Tcw.empty())
+    if(!Tcw.empty())
     {
-        Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
-        SlamPoseTrans::SlamToLocalpose_test(Tcw,ned_q,ned_t);
+        
+        SlamPoseTrans::SlamToLocalpose_test(Tcw,new_q,new_t);
 
-        Eigen::Quaterniond rot_q( 0.707 ,0, 0,0.707);
-        new_q = ned_q;
-        new_t = rot_q* ned_t;
-        /*for(int idx=0;idx<Tcw.rows;++idx)
-            for(int idy=0;idy<Tcw.cols;++idy)
-                msg.Twc[idx*Tcw.rows+idy] = Tcw.at<float>(idx,idy);*/
-   /* }
+    }
     else
     {
         return;
-    }*/
+    }
     
     //cv::imshow("0000",left);
     //cv::waitKey(1);
     //std::cout<<bitstream.size()<<" size"<<std::endl;
-    msg.x =state_->slam_pos(0);
-    msg.y = state_->slam_pos(1);
-    msg.z = 3;//state_->mav_pos(2);
-    msg.qw = state_->mav_q(0);
-    msg.qx = state_->mav_q(1);
-    msg.qy = state_->mav_q(2);
-    msg.qz = state_->mav_q(3);
+    msg.x =new_t(0)+state_->bias(0);
+    msg.y = new_t(1)+state_->bias(1);
+    msg.z = new_t(2)+state_->bias(2);//state_->mav_pos(2);
+    msg.qw = new_q.w();
+    msg.qx = new_q.x();
+    msg.qy = new_q.y();
+    msg.qz = new_q.z();
     /*msg.x = new_t(0);
     msg.y = new_t(1);
     msg.z = 3;//state_->mav_pos(2);
@@ -446,7 +453,7 @@ void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
             {
                 //state_->SetBias(msg->x-ned_t(2),msg->y+ned_t(0),3);
                 state_->SetBias(new_t(0), new_t(1), 3);
-                MoveTo(formation_pos(0), formation_pos(1), formation_pos(2), formation_yaw);
+                FormationTo(formation_pos(0), formation_pos(1), formation_pos(2), formation_yaw);
                 //state_->has_colocal_inited = true;
             }
             else
@@ -478,79 +485,23 @@ void MavNavigator::FormationCallback(const px4_csq::colocal_request &msg)
     formation_pos(2) = msg.z;
     formation_yaw = msg.yaw;
 }
-/*
-void MavNavigator::ResponsCallback(const px4_csq::frame_rosPtr msg)
+void MavNavigator::CalculateFormationOffset()
 {
-    std::vector<uchar> img_bitstream(msg->data.begin(), msg->data.end());
-    //std::cout<<img_bitstream.size()<<" size"<<std::endl;
-    Eigen::Quaterniond msg_q(msg->qw,msg->qx,msg->qy,msg->qz);
-    Eigen::Vector3d msg_t(msg->x,msg->y,msg->z);
-    cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
-    LocalposeToSlam(msg_q,msg_t,pose);
-    /*orb_formation::feature msg1;
-    msg1.x = state_->mav_pos(0);
-    msg1.y = state_->mav_pos(1);
-    msg1.z = state_->mav_pos(2);
-    std::cout<<state_->name_<<" current pos "<<msg1.x<<" "<<msg1.y<<" "<<msg1.z<<std::endl;*/
-/*
-    cv::Mat init_pose = cv::Mat::eye(4, 4, CV_32F);
-    Eigen::Quaterniond t_Q;
-    state_->get_Quaternion(t_Q);
+    double k = 0.5;
+    if(state_->self_id == 1 )
+    {
+        double x = ((other_pos[0](0) -other_pos[1](0)-1.5))*k;
+        double y = ((other_pos[0](1) -other_pos[1](1)-1.5))*k;
+        state_->formation_offset<<x,y,0;
+    }
+    else if (state_->self_id == 2)
+    {
+        double x = ((other_pos[0](0) -other_pos[2](0)-1.5))*k;
+        double y = ((other_pos[0](1) -other_pos[2](1)+1.5))*k;
+        state_->formation_offset<<x,y,0;
+    }
+}
 
-    std::cout << "The " << state_->self_id << " get respons from " << msg->nrobotid << std::endl;
-    cv::Mat right, left;
-    cv::Mat res;formation_pos
-    sensors_->GetStereoImage(left, right);
-    if (!Extractor_init)
-    {
-        cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
-        cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
-        std::vector<uchar> bitstream;
-        Extractor_init = true;
-        coLocal->GenerateFeatureBitstream(1,left1, right1, bitstream);
-        coLocal2->GenerateFeatureBitstream(1,left1, right1, bitstream);
-    }
-    cv::Mat left0(cv::imread("/home/jena/csq_ws/uav0-1_left.jpg", 0));
-    cv::Mat right0(cv::imread("/home/jena/csq_ws/uav0-1_right.jpg", 0));
-    cv::Mat left1(cv::imread("/home/jena/csq_ws/uav1-1_left.jpg", 0));
-    cv::Mat right1(cv::imread("/home/jena/csq_ws/uav1-1_right.jpg", 0));
-    std::vector<uchar> bitstream;
-    //coLocal->GenerateFeatureBitstream(1,left0, right0, bitstream);
-    coLocal->GenerateLastFrame(left0,right0);
-    std::vector<cv::KeyPoint> keyPointsLeft = coLocal->mTracker->mLastFrame.mvKeys;
-    cv::Mat descriptorLeft = coLocal->mTracker->mLastFrame.mDescriptors;
-    std::vector<cv::KeyPoint> keyPointsRight = coLocal->mTracker->mLastFrame.mvKeysRight;
-    cv::Mat descriptorRight = coLocal->mTracker->mLastFrame.mDescriptorsRight;
-    std::vector<float> mvuRight = coLocal->mTracker->mLastFrame.mvuRight;
-    std::vector<float>& mvDepth = coLocal->mTracker->mLastFrame.mvDepth;
-    coLocal->mEncoder->encodeImageStereo(keyPointsLeft, descriptorLeft, keyPointsRight, descriptorRight, bitstream);
-
-    std::vector<cv::KeyPoint> vDecKeypointsLeft;
-    cv::Mat decDescriptorsLeft ;
-    std::vector<cv::KeyPoint> vDecKeypointsRight;
-    cv::Mat decDescriptorsRight;
-    std::vector<unsigned int> vDecVisualWords;
-    coLocal2-> mDecoder->decodeImageStereo(bitstream, vDecKeypointsLeft, decDescriptorsLeft, vDecKeypointsRight, decDescriptorsRight, vDecVisualWords);
-    
-    //coLocal-> mDecoder->decodeImageStereo(bitstream, vDecKeypointsLeft, decDescriptorsLeft, vDecKeypointsRight, decDescriptorsRight, vDecVisualWords);
-    //res = coLocal->TrackFromImage(left0,right0,left0,right0);
-    res = coLocal2->TrackFromGenerate(pose,left1,right1,vDecKeypointsLeft,decDescriptorsLeft,vDecKeypointsRight,decDescriptorsRight,mvuRight,mvDepth);
-    
-    //res = coLocal2->TrackFromImage(left0,right0,left1,right1,init_pose);
-    if (!res.empty())
-    {
-        std::cout << "colocal1 success:" << res << std::endl;
-        Eigen::Quaterniond ned_q;Eigen::Vector3d ned_t;
-        SlamToLocalpose(res,ned_q,ned_t);
-        std::cout<<ned_q.w()<<","<<ned_q.x()<<","<<ned_q.y()<<","<<ned_q.z()<<std::endl;
-        std::cout<<ned_t(0)<<","<<ned_t(1)<<","<<ned_t(2)<<","<<std::endl;
-    }
-    else
-    {
-        std::cout<<"coloca1 failed"<<std::endl;
-        //res = coLocal->TrackFromBitstream(img_bitstream,init_pose,left,right);
-    }
-}*/
 void MavNavigator::DrawTrajThread(void)
 {
     while(1)
@@ -611,27 +562,47 @@ void MavNavigator::RecordGsThread(void)
             memset(&data,0,sizeof(data));
             sprintf(data,"%ld\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",now_time,record_pos[0](0),record_pos[0](1),record_pos[0](2),record_pos[1](0),record_pos[1](1),record_pos[1](2),record_pos[2](0),record_pos[2](1),record_pos[2](2));
             gs_recorder->Record(data,0);
-            //printf("rel pos of 1 and 2:%f,%f\n",(record_pos[0](0)-record_pos[2](0)),(record_pos[0](1)-record_pos[2](1)));
-           //printf("pos of 0:%f,%f est pos %f,%f\n",(record_pos[0](0)),(record_pos[0](1)),state_->slam_pos(0),state_->slam_pos(1));
+            //printf("rel pos of 1 and 2:%f,%f,2 and 3:%f,%f\n",(record_pos[0](0)-record_pos[1](0)),(record_pos[0](1)-record_pos[1](1)),(record_pos[1](1)-record_pos[2](1)),(record_pos[1](2)-record_pos[2](2)));
+            //printf("rel pos of 1 and 2:%f,%f,est:%f,%f\n",(record_pos[0](0)-record_pos[1](0)),(record_pos[0](1)-record_pos[1](1)),(other_pos[0](0)-other_pos[1](0)),(other_pos[0](1)-other_pos[1](1)));
+           printf("pos of 0:%f,%f est pos %f,%f\n",(record_pos[0](0)),(record_pos[0](1)),state_->slam_pos(0),state_->slam_pos(1));
         }
         std::this_thread::sleep_for(std::chrono::duration<double>(0.2));
     }
 }
-void MavNavigator::pos1Callback(const nav_msgs::Odometry &msg)
+void MavNavigator::gs1Callback(const nav_msgs::Odometry &msg)
 {
     record_pos[0](0) =  msg.pose.pose.position.x;
     record_pos[0](1) =  msg.pose.pose.position.y;
     record_pos[0](2) =  msg.pose.pose.position.z;
 }
-void MavNavigator::pos2Callback(const nav_msgs::Odometry &msg)
+void MavNavigator::gs2Callback(const nav_msgs::Odometry &msg)
 {
    record_pos[1](0) =  msg.pose.pose.position.x;
    record_pos[1](1) =  msg.pose.pose.position.y;
    record_pos[1](2) =  msg.pose.pose.position.z;
 }
-void MavNavigator::pos3Callback(const nav_msgs::Odometry &msg)
+void MavNavigator::gs3Callback(const nav_msgs::Odometry &msg)
 {
    record_pos[2](0) =  msg.pose.pose.position.x;
    record_pos[2](1) =  msg.pose.pose.position.y;
    record_pos[2](2) =  msg.pose.pose.position.z;
+}
+
+void MavNavigator::pos1Callback(const geometry_msgs::PoseStamped &msg)
+{
+    other_pos[0](0) =  msg.pose.position.x;
+    other_pos[0](1) =  msg.pose.position.y;
+    other_pos[0](2) =  msg.pose.position.z;
+}
+void MavNavigator::pos2Callback(const geometry_msgs::PoseStamped &msg)
+    {
+    other_pos[1](0) =  msg.pose.position.x;
+    other_pos[1](1) =  msg.pose.position.y;
+    other_pos[1](2) =  msg.pose.position.z;
+}
+void MavNavigator::pos3Callback(const geometry_msgs::PoseStamped &msg)
+{
+    other_pos[2](0) =  msg.pose.position.x;
+    other_pos[2](1) =  msg.pose.position.y;
+    other_pos[2](2) =  msg.pose.position.z;
 }

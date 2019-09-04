@@ -113,6 +113,23 @@ void System::GenerateBitstream(cv::Mat &imLeft,cv::Mat imRight, std::vector<ucha
     mvDepth = mpTracker->bitframe.mvDepth;
     mEncoder->encodeImageStereo(keypointsLeft, descriptorsLeft, keypointsRight, descriptorsRight, bitstream);
 }
+void System::CurrentFrameBitstream(cv::Mat &Tcw, std::vector<uchar> &bitstream,std::vector<float> &mvuRight,std::vector<float> &mvDepth,int& key_size)
+{
+    std::vector<cv::KeyPoint> keypointsLeft, keypointsRight;
+    cv::Mat descriptorsLeft, descriptorsRight;
+    //mpTracker->GenerateBitFrame(Tcw,keypointsLeft,  keypointsRight, descriptorsLeft,descriptorsRight);
+    //mpTracker->GenerateBitFrame(imLeft,imRight,keypointsLeft,  keypointsRight, descriptorsLeft,descriptorsRight);
+    keypointsLeft = mpTracker->mCurrentFrame.mvKeys;
+    keypointsRight = mpTracker->mCurrentFrame.mvKeysRight;
+    descriptorsLeft = mpTracker->mCurrentFrame.mDescriptors;
+    descriptorsRight = mpTracker->mCurrentFrame.mDescriptorsRight;
+    mvuRight = mpTracker->mCurrentFrame.mvuRight;
+    mvDepth = mpTracker->mCurrentFrame.mvDepth;
+    Tcw = mpTracker->mCurrentFrame.mTcw.clone();
+
+    key_size = keypointsLeft.size();
+    mEncoder->encodeImageStereo(keypointsLeft, descriptorsLeft, keypointsRight, descriptorsRight, bitstream);
+}
 
 void System::Encoder_init(const cv::FileStorage &fSettings)
 {

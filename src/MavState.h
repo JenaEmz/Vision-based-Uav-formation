@@ -68,12 +68,18 @@ public:
   friend class MavNavigator;
   void SetBias(double x, double y, double z);
 
+  Eigen::Vector3d bias;
+  double bias_yaw = 0;
+
   Eigen::Vector3d slam_pos;
+  Eigen::Quaterniond slam_q;
 
   Eigen::Vector3d mav_pos, mav_vel, mav_euler,groundtruth;
 
   bool has_init_q = false;
   Eigen::Quaterniond init_q;
+
+  Eigen::Vector3d formation_offset;
 private:
   bool MavOk = false;
   MavControlLoop *controller_;
@@ -81,6 +87,8 @@ private:
 
   ros::NodeHandle nh_;
   ros::Subscriber state_sub_, local_pose_sub_, vel_sub_, ground_truth_sub_;
+  ros::Publisher slam_pos_pub;
+  geometry_msgs::PoseStamped slam_bias_msg;
 
   mutex vel_setpoint_mutex_;
   mutex pos_setpoint_mutex_;
@@ -88,8 +96,6 @@ private:
 
   Eigen::Vector3d target_pos_, target_vel_;
   double target_yaw = 0;
-  Eigen::Vector3d bias;
-  double bias_yaw = 0;
   matrix::Quatf mav_q;
   double mav_yaw;
   void MavStateCallback(const mavros_msgs::State::ConstPtr &msg);
